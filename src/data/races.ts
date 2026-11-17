@@ -557,6 +557,136 @@ var OWNWEB = {
   'gt-hut-bratrikov':['http://sokolhut.cz/']
 };
 RACES.forEach(function(r){var o=OWNWEB[r.id];if(!o)return;r.web=o[0];if(o[1]){r.links=Object.assign({},r.links,{reg:[hostOf(o[1]),o[1]]});}});
+/* Nedávno doběhnuté závody s výsledky v archivu ČAS (staženo 17. 11. 2026) */
+var PAST = `2026-11-14|Podzimní Řakom|Dolany u Klatov|Plzeňský|5|smiseny|podzimni-rakom-2026|49.432|13.243||
+2026-11-14|Kuchařovická výzva|Kuchařovice|Jihomoravský|8.4/5.9|smiseny|kucharovicka-vyzva-1-2026|48.881|16.086|http://www.rabbitsznojmo.cz/cs/7/kucharovicka-vyzva|
+2026-11-14|Dvouetapový kros Zaječov|Malá Víska|Středočeský|13.5/6.7|trail|dvouetapovy-kros-zajecov-2026|49.912|13.882|https://www.ultratrainingbrdy.cz/zavody/|
+2026-11-14|Hubertův lesní trail|Malšovice|Královéhradecký|6|trail|hubertuv-lesni-trail-2026|50.191|15.860|https://www.haki-run.cz/hubertuv-lesni-trail/|
+2026-11-14|Půlmaraton pátera Václava Kosmáka|Moravské Budějovice|Vysočina|21.097/5.275|silnice|pulmaraton-patera-vaclava-kosmaka-2026|49.052|15.809|http://www.orelmb.cz/|
+2026-11-14|Ludgeřovický kros|Ludgeřovice|Moravskoslezský|10/4|trail|ludgerovicky-kros-2026|49.890|18.240|https://www.bkludgerovice.cz/|
+2026-11-14|Svatomartinský běh|Petřkovice u Starého Jičína|Moravskoslezský|20|smiseny|svatomartinsky-beh-2026|49.575|17.950|https://ahojvhore.eu/zavody/|
+2026-11-14|Hannah Pilsen Trail Krkavec|Plzeň-Bílá Hora|Plzeňský|42.2/22.5/7|trail|hannah-pilsen-trail-krkavec-2026|49.747|13.378|http://pilsentrail.cz/krkavec/|
+2026-11-14|Běh Dlouhými záhony|Úpice|Královéhradecký|6.6|smiseny|beh-dlouhymi-zahony-2026|50.512|16.016|http://maratonstav.cz/|
+2026-11-14|Běh přes Černovírský les|Hlušovice|Olomoucký|10|silnice|beh-pres-cernovirsky-les-2026|49.639|17.278|https://www.hanackybeh.cz/|
+2026-11-14|BoBoBěh|Bedřichov|Liberecký|30/10/1|trail|bobobeh-2026|50.790|15.140|https://www.boboloppet.com/|
+2026-11-11|Běh na Dobrošov|Náchod-Běloves|Královéhradecký|3.8|vrch|beh-na-dobrosov-2026|50.417|16.163|https://redpointteam.cz/stp/propozice/bezecke-vrsky/beh-na-dobrosov/propozice-behu-na-dobrosov/|
+2026-11-08|Chlumecká pětka - Svatomartinský běh|Chlumec nad Cidlinou|Královéhradecký|5|smiseny|chlumecka-petka-svatomartinsky-beh-2026|50.154|15.460|https://splasena-lokomotiva.webnode.cz/|
+2026-11-08|Krumlovská 11|Český Krumlov|Jihočeský|11|smiseny|krumlovska-11-2026|48.811|14.315|http://www.krumlovska11.cz/|1
+2026-11-08|Velká kunratická|Praha 4-Kunratice|Praha|3.1/1.9|trail|velka-kunraticka-2026|50.087|14.421|http://www.velkakunraticka.cz/|1
+2026-11-08|Běh kolem Doubravky|Teplice|Ústecký|10/4.2/3/1.5|smiseny|beh-kolem-doubravky-2026|50.640|13.825|https://www.ddmteplice.cz/|1
+2026-11-08|Excalibur Race DOG OCRC Helfštýn|Helfštýn|Olomoucký|6|OCR|excalibur-race-dog-ocrc-helfstyn-2026|49.521|17.627|http://www.excaliburrace.cz/|1
+2026-11-08|Excalibur Race KIDS II. Helfštýn|Helfštýn|Olomoucký|2|OCR|excalibur-race-kids-ii-helfstyn-2026|49.521|17.627|http://www.excaliburrace.cz/|1
+2026-11-08|Excalibur Race KIDS I. Helfštýn|Helfštýn|Olomoucký|1|OCR|excalibur-race-kids-i-helfstyn-2026|49.521|17.627|http://www.excaliburrace.cz/|1
+2026-11-08|Starobělské Lurdy|Ostrava-Zábřeh|Moravskoslezský|16/3.2|trail|starobelske-lurdy-2026|49.835|18.292|https://www.bezvabeh.cz/starobelske-lurdy|1
+2026-11-08|Dobřichovický běh|Dobřichovice|Středočeský|6|smiseny|dobrichovicky-beh-2026|49.927|14.275|https://www.askdipoli.cz/dobrichovickybeh2026-843483.html|1
+2026-11-08|PoHodová devítka|Velká Bíteš|Vysočina|9/2|trail|pohodova-devitka-2026|49.288|16.227|https://www.pohodovadevitka.cz/|1
+2026-11-08|Žandovská desítka|Žandov|Liberecký|10/4|smiseny|zandovska-desitka-2026|50.714|14.396|http://oblcl.cz/|
+2026-11-07|Běh Mrázovkou - o pohár starosty TJ Sokol I. Smíchov|Praha 5|Praha|4|smiseny|beh-mrazovkou-o-pohar-starosty-tj-sokol-i-smichov-2026|50.087|14.421|https://www.tjsis.cz/|
+2026-11-07|Běh okolo přehrady Křetínky|Letovice|Jihomoravský|14|silnice|beh-okolo-prehrady-kretinky-2026|49.547|16.574|https://www.fanclubbopkretinka.cz/|1
+2026-11-07|Během proti závislostem|Plzeň 2|Plzeňský|6|trail|behem-proti-zavislostem-2026|49.747|13.378|https://stridejnohy.cz/|
+2026-11-07|Malá Pardubická cross country|Pardubice|Pardubický|3.8/2.5|trail|mala-pardubicka-cross-country-2026|50.034|15.781|http://www.acpce.cz/|1
+2026-11-07|Hornická desítka|Frýdek-Místek|Moravskoslezský|10/3.2|silnice|hornicka-desitka-2026|49.683|18.350|http://www.atletikafm.cz/|1
+2026-11-07|Excalibur Race SKY Helfštýn|Helfštýn|Olomoucký|6|OCR|excalibur-race-sky-helfstyn-2026|49.521|17.627|http://www.excaliburrace.cz/|1
+2026-11-07|Závod dvojic|Kladno|Středočeský|10|smiseny|zavod-dvojic-2026|50.147|14.103|http://www.maratonkladno.cz/|1
+2026-11-07|Labský půlmaraton|Lysá nad Labem|Středočeský|21.1/12|trail|labsky-pulmaraton-2026|50.201|14.833|https://crosscountryrace.cz/|1
+2026-11-07|Kovářská pětka|Zlín|Zlínský|5/1.9|silnice|kovarska-petka-2026|49.226|17.667|https://behyzlin.cz/|1
+2026-11-07|Svatojánská 20|Beroun|Středočeský|18/11|smiseny|svatojanska-20-2026|49.964|14.072|http://www.svatojanska20.estranky.cz/|1
+2026-11-07|Run For Movember|Praha 10|Praha|15/10/5|smiseny|run-for-movember-2026|50.087|14.421|https://www.runformovember.cz/|1
+2026-11-07|Memoriál MUDr. Josefa Podmolíka - Běžecký festival Otrokovice 2026|Otrokovice-Baťov|Zlínský|42.195/21.097/10/4.2|silnice|memorial-mudr-josefa-podmolika-bezecky-festival-otrokovice-2026-2026|49.217|17.517|http://www.bezecky-festival.cz/|
+2026-11-07|Canicross Lázně Velichovky|Lázně Velichovky|Středočeský|3.6|trail|canicross-lazne-velichovky-2026|50.354|15.844|http://www.sportvisio.cz/|1
+2026-11-07|Trail Lázně Velichovky|Lázně Velichovky|Středočeský|10/5|trail|trail-lazne-velichovky-2026|50.354|15.844|https://gladiatorrace.cz/trail/velichovky.html|1
+2026-11-07|2 míle s úsměvem Praha - listopad|Praha 7|Praha|3.2|silnice|2-mile-s-usmevem-praha-listopad-2026|50.087|14.421|https://cs.srichinmoyraces.org/beh-2-mile-praha|1
+2026-11-07|2 míle s úsměvem Zlín - listopad|Zlín|Zlínský|3.2|silnice|2-mile-s-usmevem-zlin-listopad-2026|49.226|17.667|https://cs.srichinmoyraces.org/beh-2-mile-zlin|1
+2026-11-07|Král Točné - Žaludská osma|Praha|Praha|8.5/3|trail|kral-tocne-zaludska-osma-2026|50.087|14.421|https://www.facebook.com/DusmenGrandPrix/?locale=cs_CZ|
+2026-11-07|Excalibur Race HELL Helfštýn|Helfštýn|Olomoucký|12|OCR|excalibur-race-hell-helfstyn-2026|49.521|17.627|http://www.excaliburrace.cz/|1
+2026-11-07|Běh kolem Práchně|Horažďovice|Plzeňský|9.5|smiseny|beh-kolem-prachne-2026|49.321|13.701|https://www.envicentrum.eu/programova-nabidka/akce-pro-skoly/beh-kolem-prachne-uvodni|
+2026-11-06|Excalibur Race MOON Helfštýn|Helfštýn|Olomoucký|12|OCR|excalibur-race-moon-helfstyn-2026|49.521|17.627|http://www.excaliburrace.cz/|1
+2026-11-04|Benešovská dušičková soutěska|Benešov nad Ploučnicí|Ústecký|5|smiseny|benesovska-dusickova-souteska-2026|50.742|14.312|http://konkordia-decin.cz/|1
+2026-11-02|Běžecká série Berounka - Beroun|Beroun|Středočeský|9.5|trail|bezecka-serie-berounka-beroun-2026|49.964|14.072|https://bezeckaserieberounka.cz/beroun-2-listopad-2026/|1
+2026-11-01|Čokoládová 11|Heraltice|Vysočina|11|silnice|cokoladova-11-2026|49.264|15.729||1
+2026-11-01|HRUŠTICE 10 km - Memoriál Zdeňka Drobníka|Turnov|Liberecký|10|smiseny|hrustice-10-km-memorial-zdenka-drobnika-2026|50.587|15.157|http://www.hrusticebeh.cz/|1
+2026-11-01|Trail Running Cup - Motolské jamky|Praha 5-Motol|Praha|10/5|trail|trail-running-cup-2026-motolske-jamky-2026|50.087|14.421|https://www.trailrunningcup.cz/|1
+2026-11-01|Běh na Koráb|Kdyně|Plzeňský|6.54|vrch|beh-na-korab-2026|49.391|13.040|https://www.bezecchodska-statistiky.cz/result.php|1
+2026-11-01|2 míle s úsměvem Olomouc - listopad|Olomouc|Olomoucký|3.2|silnice|2-mile-s-usmevem-olomouc-listopad-2026|49.594|17.251|https://cs.srichinmoyraces.org/beh-2-mile-olomouc|1
+2026-10-31|Lesní kros mezi přeštickými prasaty|Přeštice|Plzeňský|8|trail|lesni-kros-mezi-prestickymi-prasaty-2026|49.573|13.334|http://www.behprestice.cz/|
+2026-10-31|Běžecký kros okolo Soukeníku|Sezimovo Ústí|Jihočeský|6|smiseny|bezecky-kros-okolo-soukeniku-2026|49.385|14.685||1
+2026-10-31|Janovských 11 a 19 km|Janov nad Nisou|Liberecký|19/11/6|smiseny|janovskych-11-a-19-km-2026|50.772|15.169|http://www.11a19.cz/|1
+2026-10-31|Halloween NightRUN 2026|Halenkovice|Zlínský|6/3|smiseny|halloween-nightrun-2026-2026|49.171|17.472|http://profue.cz/behej|1
+2026-10-31|Gladiator Race Halloween (Josefov)|Jaroměř|Královéhradecký|4|OCR|gladiator-race-halloween-josefov-2026|50.356|15.921|https://gladiatorrace.cz/ocr/halloween.html|1
+2026-10-31|Krospůlmaraton|Sosnová u České Lípy|Liberecký|21|trail|krospulmaraton-2026|50.660|14.533|http://www.oblcl.cz/|1
+2026-10-31|Lhotecká Kaštanka|Lhota|Středočeský|15/7.5|smiseny|lhotecka-kastanka-2026|50.217|14.025|https://maratonkladno.cz/?cat=47&mon=10&yea=2026|1
+2026-10-31|Běh na památku P. Adolfa Tesaře|Ivančice|Jihomoravský|10|trail|beh-na-pamatku-p-adolfa-tesare-2026|49.101|16.378|http://www.orelivancice.cz/|1
+2026-10-31|Běh Labským údolím|Dolní Žleb|Ústecký|16/8|smiseny|beh-labskym-udolim-2026|50.843|14.215|https://www.atletikadecin.cz/labak|1
+2026-10-31|Podzimní běh Dražovkou|Hořovice|Středočeský|7.2/3.6|smiseny|podzimni-beh-drazovkou-2026|49.836|13.903|https://brdskypohar.cz/zavody|1
+2026-10-31|Vinařský maraton|Velké Bílovice|Jihomoravský|42.195/21.097|silnice|vinarsky-maraton-2026|48.849|16.892|http://www.vinarskymaraton.cz/|1
+2026-10-28|Králodvorský čtverec|Králův Dvůr|Středočeský|10.45|silnice|kralodvorsky-ctverec-2026|49.950|14.034|http://www.kraluv-dvur.cz/|1
+2026-10-28|Týnišťská desítka|Týniště nad Orlicí|Královéhradecký|10|smiseny|tynistska-desitka-2026|50.151|16.078||1
+2026-10-28|Sokolský běh republiky - Ústí nad Labem|Ústí nad Labem|Ústecký|4.5|silnice|sokolsky-beh-republiky-usti-nad-labem-2026|50.661|14.032|https://www.behrepubliky.cz/propozice/usti-nad-labem|1
+2026-10-28|Sokolský běh republiky - Uherský Brod|Uherský Brod|Zlínský|5|smiseny|sokolsky-beh-republiky-uhersky-brod-2026|49.025|17.647|https://www.behrepubliky.cz/propozice/uhersky-brod|1
+2026-10-28|Sokolský běh republiky - Sruby|Sruby|Pardubický|6.3|smiseny|sokolsky-beh-republiky-sruby-2026|49.920|16.162|https://www.behrepubliky.cz/propozice/sruby|1
+2026-10-28|Sokolský běh republiky - Prostějov|Prostějov|Olomoucký|10/5/2.5|silnice|sokolsky-beh-republiky-prostejov-2026|49.472|17.111|https://www.behrepubliky.cz/propozice/prostejov|1
+2026-10-28|Sokolský běh republiky - Písek|Písek|Jihočeský|5.35|smiseny|sokolsky-beh-republiky-pisek-2026|49.309|14.148|https://www.behrepubliky.cz/propozice/pisek|1
+2026-10-28|Sokolský běh republiky - Oleška|Oleška|Středočeský|6.7|trail|sokolsky-beh-republiky-oleska-2026|49.962|14.919|https://www.behrepubliky.cz/propozice/oleska|1
+2026-10-28|Sokolský běh republiky - Nový Bydžov|Nový Bydžov|Královéhradecký|4.8|smiseny|sokolsky-beh-republiky-novy-bydzov-2026|50.242|15.491|https://www.behrepubliky.cz/propozice/novy-bydzov|1
+2026-10-28|Sokolský běh republiky - Mníšek pod Brdy|Mníšek pod Brdy|Středočeský|5|smiseny|sokolsky-beh-republiky-mnisek-pod-brdy-2026|49.867|14.262|https://www.behrepubliky.cz/propozice/mnisek-pod-brdy|1
+2026-10-28|Sokolský běh republiky - Milovice|Milovice|Středočeský|5.8|smiseny|sokolsky-beh-republiky-milovice-2026|50.226|14.889|https://www.behrepubliky.cz/propozice/milovice|1
+2026-10-28|Sokolský běh republiky - Lužice|Lužice|Jihomoravský|7.5|silnice|sokolsky-beh-republiky-luzice-2026|48.841|17.071|https://www.behrepubliky.cz/propozice/luzice|1
+2026-10-28|Sokolský běh republiky - Louňovice pod Blaníkem|Louňovice pod Blaníkem|Středočeský|5.6|smiseny|sokolsky-beh-republiky-lounovice-pod-blanikem-2026|49.637|14.848|https://www.behrepubliky.cz/propozice/lounovice-pod-blanikem|1
+2026-10-28|Sokolský běh republiky - Kutná Hora|Kutná Hora|Středočeský|5.7|smiseny|sokolsky-beh-republiky-kutna-hora-2026|49.948|15.268|https://www.behrepubliky.cz/propozice/kutna-hora|1
+2026-10-28|Sokolský běh republiky - Komárov|Komárov|Středočeský|4.9|smiseny|sokolsky-beh-republiky-komarov-2026|49.806|13.856|https://www.behrepubliky.cz/propozice/komarov|1
+2026-10-28|Sokolský běh republiky - Dolní Újezd|Dolní Újezd|Pardubický|8.9|silnice|sokolsky-beh-republiky-dolni-ujezd-2026|49.826|16.255|https://www.behrepubliky.cz/dolni-ujezd/r68|1
+2026-10-28|Sokolský běh republiky - Děčín|Děčín|Ústecký|5|silnice|sokolsky-beh-republiky-decin-2026|50.773|14.196|https://www.behrepubliky.cz/propozice/decin|1
+2026-10-28|Sokolský běh republiky - Březník|Březník|Vysočina|6.2/5|smiseny|sokolsky-beh-republiky-breznik-2026|49.170|16.194|https://www.behrepubliky.cz/breznik/r54|1
+2026-10-28|Sokolský běh republiky - Praha|Praha 1|Praha|5.6|silnice|sokolsky-beh-republiky-praha-2026|50.087|14.421|https://www.behrepubliky.cz/propozice/praha|1
+2026-10-28|Provodovský běh|Provodov|Zlínský|21/11/5|trail|provodovsky-beh-2026|49.095|17.778|http://beh.provodov.cz/|1
+2026-10-28|Sokolský běh republiky - Nepomuk|Nepomuk|Plzeňský|3.2|silnice|sokolsky-beh-republiky-nepomuk-2026|49.486|13.582|https://www.behrepubliky.cz/propozice/nepomuk|1
+2026-10-28|Náměšťský tvarůžek|Náměšť na Hané|Olomoucký|9.2|trail|namestsky-tvaruzek-2026|49.603|17.063|https://www.hanackybeh.cz/|1
+2026-10-28|Podzimní půlmaraton VAŠÍ LIGY 2026|Praha 4-Braník|Praha|21.1/5|silnice|podzimni-pulmaraton-vasi-ligy-2026-2026|50.030|14.410|https://www.vaseliga.cz/behani/pulmaratony|1
+2026-10-27|Smaltovaný bažant|Heřmanův Městec|Pardubický|1.5|smiseny|smaltovany-bazant-2026|49.947|15.665|http://www.podbeh.cz/|1
+2026-10-25|Běh metropole MČ Praha 6|Praha 6|Praha|4.2|silnice|beh-metropole-mc-praha-6-1-2026|50.083|14.330|http://behmetropole.cz/|
+2026-10-25|Kobeřický půlmaraton|Kobeřice|Moravskoslezský|21.097|silnice|kobericky-pulmaraton-2026|49.985|18.052|https://tjsokolkoberice.cz/|1
+2026-10-24|Běh na 24 hodin|Plzeň|Plzeňský|100/42.2|jiny|beh-na-24-hodin-2026|49.747|13.378|https://www.marathonplzen.cz/|1
+2026-10-24|Plzeňská hodinovka|Plzeň|Plzeňský||jiny|plzenska-hodinovka-2026|49.747|13.378|https://www.marathonplzen.cz/|1
+2026-10-24|Běh do vrchu na Pastýřskou stěnu|Děčín|Ústecký|0.83|vrch|beh-do-vrchu-na-pastyrskou-stenu-2026|50.773|14.196|https://www.aklokodecin.cz/kalendar-akci/|1
+2026-10-24|Běh kolem Asuánu|Praha 5-Jinonice|Praha|3.6|trail|beh-kolem-asuanu-2026|50.054|14.370|https://www.atletikastodulky.cz/aktuality/|1
+2026-10-24|Otrokovické svahy|Otrokovice|Zlínský|10/5|trail|otrokovicke-svahy-2026|49.217|17.517|http://www.otrokovickesvahy.cz/|1
+2026-10-24|NN Night Run Olomouc|Olomouc|Olomoucký|10/5/3|silnice|nn-night-run-olomouc-2026|49.594|17.251|https://night-run.cz/zavody/-324-nn-night-run-olomouc.html|1
+2026-10-24|Zlatý maraton Emila Zátopka Ostrava|Ostrava|Moravskoslezský|21.1/10|silnice|zlaty-maraton-emila-zatopka-ostrava-2026|49.835|18.292|http://www.zatopekmaraton.cz/|1
+2026-10-24|Běhej Karlovice|Velké Karlovice|Zlínský|12/7|trail|behej-valachy-2026|49.361|18.284|https://valachytour.cz/|1
+2026-10-24|KEEN Prague Park Race – Prokopské údolí|Praha 5-Hlubočepy|Praha|14/8|trail|salomon-prague-park-race-prokopske-udoli-2026|50.087|14.421|http://pragueparkrace.cz/|1
+2026-10-24|Leskros Hradečák|Hradec Králové - Malšova Lhota|Královéhradecký|21.1/10/5|trail|leskros-hradecak-2026|50.209|15.832|https://www.leskros.cz/akce/leskros-hradecak/|1
+2026-10-24|Skalička run|Skalička|Jihomoravský|22/13/7|trail|skalicka-run-2026|49.524|17.796|https://www.brodyrun.cz/skalicka-run/|1
+2026-10-24|Olomoucký kros|Olomouc|Olomoucký|9|trail|olomoucky-kros-2026|49.594|17.251|https://www.atletikaolomouc.cz/|
+2026-10-24|Slapy Trail Maniacs|Cholín|Středočeský|61/47/33|trail|slapy-trail-maniacs-2026|49.764|14.338|http://trailmaniacs.cz/|1
+2026-10-24|Třebíčský maraton|Třebíč|Vysočina|42.2/21.1/10|silnice|trebicsky-maraton-2026|49.215|15.882|https://trebicskymaraton.cz/|1
+2026-10-24|Tálínská desítka|Tálín|Jihočeský|10|silnice|talinska-desitka-2026|49.257|14.236|http://www.talin.cz/|1
+2026-10-23|Mizuno Neon Run Olomouc|Olomouc|Olomoucký|5|smiseny|mizuno-neon-run-olomouc-2026|49.594|17.251|https://neonrun.cz/zavody/-332-mizuno-neon-run-olomouc.html|
+2026-10-21|Loučení s oválem|Frýdek-Místek|Moravskoslezský|3|jiny|louceni-s-ovalem-2026|49.683|18.350|http://www.atletikafm.cz/|1
+2026-10-18|Běh pro republiku|Příbram|Středočeský|5|smiseny|beh-pro-republiku-2026|49.690|14.010|https://behprorepubliku.blogspot.com/|1
+2026-10-18|Jilemnický kros|Jilemnice|Liberecký|10/5|trail|jilemnicky-kros-2026|50.609|15.507|http://www.skijilemnice.cz/|1
+2026-10-18|Běh okolo Rané|Raná|Ústecký|4.3|smiseny|beh-okolo-rane-2026|50.408|13.770|https://www.facebook.com/groups/603676513009720/|
+2026-10-18|Kros Českým rájem|Skokovy|Středočeský|15/10/5|trail|inov-8-kros-ceskym-rajem-2026|50.408|15.205|https://krostour.cz/kros-ceskym-rajem/|1
+2026-10-18|Kros Jesenický surovec|Jesenice (okr. Rakovník)|Středočeský|21/6|trail|kros-jesenicky-surovec-2026|50.097|13.469|http://www.jesenickyfestivalek.cz/|
+2026-10-18|Běh na Žaltman|Malé Svatoňovice|Královéhradecký|2.8|vrch|beh-na-zaltman-2026|50.534|16.050|https://redpointteam.cz/stp/propozice/bezecke-vrsky/beh-na-zaltman/propozice-behu-na-zaltman/|
+2026-10-18|Horokros|Šumperk|Olomoucký|15.5|trail|horokros-2026|49.965|16.971|http://www.horalsumperk.cz/horokros/|1
+2026-10-18|PREFA Brněnská 25|Brno|Jihomoravský|25/16/8|silnice|prefa-brnenska-25-2026|49.195|16.608|https://www.behejbrno.com/prefa-brnenska-25-2026/|1
+2026-10-18|46. Velká cena Monaka|Slatiňany|Pardubický|10/3.6|trail|46-velka-cena-monaka-2026|49.921|15.814|https://krbchrudim.cz/|1
+2026-10-18|Běh Zlínem "Přes valašské kotáry"|Zlín|Zlínský|6|smiseny|beh-zlinem-pres-valasske-kotary-2026|49.226|17.667|http://www.atletikazlin.cz/|1
+2026-10-18|Podzimní Kiosk|Šternberk|Olomoucký|7/3.5|trail|podzimni-kiosk-2026|49.730|17.299|https://skvyhlidka.cz/|1
+2026-10-18|Klánovický 1/2maraton|Praha-Klánovice|Praha|21.1/10|smiseny|klanovicky-1-2maraton-2025|50.087|14.421|http://www.klanovickypulmaraton.cz/propozice|1
+2026-10-17|Běh do vrchu - Vodník|Vimperk|Jihomoravský|1.3|vrch|beh-do-vrchu-vodnik-2026|49.059|13.783|https://www.skisumava.cz/|1
+2026-10-17|Heimstaden Havířovská desítka|Havířov|Moravskoslezský|10|silnice|heimstaden-havirovska-desitka-2026|49.780|18.430|http://h10.cz/|1`;
+PAST.split('\n').forEach(function(line){
+  var f=line.split('|');var slug=f[6];
+  var dists=f[4]?f[4].split('/').map(function(x){return parseFloat(x);}):[];
+  RACES.push(R({id:'cbp-'+slug,name:f[1],from:f[0],place:f[2],region:f[3],lat:parseFloat(f[7]),lon:parseFloat(f[8]),surface:f[5],tracks:dists.map(function(d){return [d,null];}),status:'oficialni',plat:['cb'],links:{reg:null,start:null,res:['Český běh – výsledky',cbRes(slug)]},resReady:f[10]==='1',src:[['Český běh (výsledky)',cbRes(slug)]],web:f[9]||cbDetail(slug)}));
+});
+var RESHOST=/my\.raceresult\.com|sport-base\.eu|nazavody\.cz|amchrono\.cz|sportchallenge\.cz|stopnito\.cz\/detail|4timing\.cz|championchip\.cz|onlinesystem\.cz|olympijskybeh\.cz/;
+function resultLink(r){var lk=r.links||{};
+  if(lk.res)return {label:'Výsledky',host:hostOf(lk.res[1]),url:lk.res[1]};
+  if(lk.reg&&RESHOST.test(lk.reg[1]))return {label:'Výsledky',host:hostOf(lk.reg[1]),url:lk.reg[1]};
+  if(r.webOwn)return {label:'Výsledky u pořadatele',host:hostOf(r.web),url:r.web};
+  return null;}
 RACES.forEach(function(r){ r.webOwn = !!r.web && !/ceskybeh\.cz\/zavody|running\.life|gotrail\.run|stopnito\.cz\/zavody$/.test(r.web); });
 RACES.forEach(function(r){
   var night=/no[čc]n/i.test(r.name)||(r.start&&parseInt(r.start,10)>=17);
@@ -589,4 +719,4 @@ function fmtKm(v){return String(v).replace('.',',');}
 function hasReg(r){return !!(r.links&&r.links.reg);}
 
 
-export {RACES,HOME,MON,DOW,DISTS,SURFS,SURFLAB,TERR,FLAGS,SERIES,PLATS,STATUS,RADII,KRAJE,KMP,TERRLAB,PAGE,regionLabel,roadKm,terrainOf,hasFlag,fmtKm,hasReg};
+export {resultLink,RACES,HOME,MON,DOW,DISTS,SURFS,SURFLAB,TERR,FLAGS,SERIES,PLATS,STATUS,RADII,KRAJE,KMP,TERRLAB,PAGE,regionLabel,roadKm,terrainOf,hasFlag,fmtKm,hasReg};

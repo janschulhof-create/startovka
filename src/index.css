@@ -173,3 +173,8 @@ select:focus-visible,input:focus-visible{outline:2px solid #C2410C;outline-offse
 .locbox p{margin:0;flex:1 1 220px;font-size:14px;color:#2B2F35}
 .geobtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:10px;border:1.5px solid #C2410C;background:#FFFFFF;color:#C2410C;font:600 14px Inter,sans-serif;cursor:pointer;white-space:nowrap}
 .geobtn:hover{background:#FCE9DD}
+.mnav{grid-template-columns:repeat(4,1fr)}
+.wkhead{display:flex;align-items:baseline;gap:8px;margin:10px 0 0;font:700 17px 'Space Grotesk',sans-serif;color:#15171A}
+.wkhead span{font:500 13px Inter,sans-serif;color:#5A5F66}
+.tag.done{background:#E0EDE2;color:#24502F;border-color:#BFD8C4}
+.resinfo{background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:12px 16px;font-size:14px;color:#2B2F35;line-height:1.5}
