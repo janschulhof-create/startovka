@@ -30,8 +30,13 @@ function findDates(text, today) {
     add(m.index, yy, mo, +m[1], m[2] ? +m[2] : 0)
   }
   for (const m of t.matchAll(/(20\d{2})-(\d{2})-(\d{2})/g)) add(m.index, +m[1], +m[2], +m[3], 0)
-  const kw = [...t.matchAll(/termin|datum|kdy|konani|kona se|date|zavod se kona/g)].map((m) => m.index)
-  res.forEach((r) => { r.score = (kw.some((k) => r.pos - k >= 0 && r.pos - k < 120) ? 3 : 0) - r.pos / 20000 })
+  const cnt = {}; res.forEach((r) => { cnt[r.from] = (cnt[r.from] || 0) + 1 })
+  res.forEach((r) => {
+    const before = t.slice(Math.max(0, r.pos - 45), r.pos)
+    const good = /(termin|datum|kdy:|konani|kona se|koná|date|zavod se kona|v sobotu|v nedeli|sobota|nedele)[^\n]*$/.test(before)
+    const bad = /(\bdo|nejpozdeji|storno|uzaverk|uzavreni|prihlasky do|registrace do|zlevnen|sleva|platba)\s*$/.test(before) || /(storno|uzaverk|do \d)/.test(before.slice(-25))
+    r.score = Math.min(cnt[r.from], 4) * 2 + (good ? 3 : 0) - (bad ? 6 : 0) + (r.pos < 800 ? 1 : 0) - r.pos / 50000
+  })
   res.sort((a, b) => b.score - a.score)
   return res
 }
