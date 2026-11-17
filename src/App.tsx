@@ -81,6 +81,11 @@ export default function App() {
   const [s, setS] = useState(INITIAL)
   const [loc, setLoc] = useState('Turnov')
   const [adv, setAdv] = useState(false)
+  const MQ = '(max-width: 720px)'
+  const [mob, setMob] = useState(() => typeof window !== 'undefined' && window.matchMedia(MQ).matches)
+  useEffect(() => { const m = window.matchMedia(MQ); const f = () => setMob(m.matches); m.addEventListener('change', f); return () => m.removeEventListener('change', f) }, [])
+  const [sheet, setSheet] = useState(false)
+  useEffect(() => { document.body.style.overflow = sheet ? 'hidden' : ''; return () => { document.body.style.overflow = '' } }, [sheet])
   const home = useMemo(() => findPlace(loc), [loc])
   const kmOf = (r) => kmFrom(home, r)
   const pickCenter = (v) => setS((p) => {
@@ -240,55 +245,7 @@ export default function App() {
   const segBtn = (on) => ({ minHeight: 32, padding: '0 10px', border: 0, font: '600 13px Inter, sans-serif', cursor: 'pointer', background: on ? '#FFFFFF' : 'transparent', color: on ? '#15171A' : '#B8BCC2' })
   const reset = () => setS({ ...INITIAL, view: s.view, sort: s.sort })
 
-  return (
-    <div style={{ fontFamily: 'Inter, sans-serif', color: '#15171A', background: '#F5F4EF', minHeight: '100vh' }}>
-      {DEMO && (
-        <div role="status" style={{ background: '#FCE9DD', color: '#7C2D12', fontSize: 13, padding: '8px 16px', textAlign: 'center' }}>
-          Testovací verze · účty a uložené závody se zatím ukládají jen v tomto prohlížeči
-        </div>
-      )}
-      <header style={{ background: '#15171A', color: '#FFFFFF' }}>
-        <div style={{ maxWidth: 1360, margin: '0 auto', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 9, background: '#C2410C', display: 'grid', placeItems: 'center', color: '#fff' }}>
-              <Icon size={20} w={2.2} d={<><path d="M4 21V4" /><path d="M4 4h12l-2 4 2 4H4" /></>} />
-            </div>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22 }}>Startovka</span>
-            <span style={{ fontSize: 13, color: '#B8BCC2' }}>kalendář běžeckých závodů</span>
-          </div>
-          <nav aria-label="Hlavní" style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 14, flexWrap: 'wrap' }}>
-            <a href="#" onClick={(e) => { e.preventDefault(); setS((p) => ({ ...p, view: 'seznam' })) }} style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 600 }}>Závody</a>
-            <a href="#zdroje" style={{ color: '#B8BCC2', textDecoration: 'none' }}>Zdroje dat</a>
-            <span style={{ display: 'inline-flex', border: '1px solid #3A3E45', borderRadius: 8, overflow: 'hidden' }}>
-              <button aria-pressed="true" style={segBtn(true)}>CZ</button>
-              <button aria-pressed="false" style={segBtn(false)} title="Anglická verze se připravuje">EN</button>
-            </span>
-            {!user ? (
-              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button className="hbtn" onClick={() => openAuth('login')}>Přihlásit</button>
-                <button className="btn" onClick={() => openAuth('register')} style={{ minHeight: 38 }}>Registrace</button>
-              </span>
-            ) : (
-              <span style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <button className="hbtn" onClick={showMuj}>♥ Můj kalendář ({saved.length})</button>
-                <span className="avatar" aria-hidden="true">{initials}</span>
-                <span className="uemail" style={{ fontSize: 13, color: '#C9CCD1', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</span>
-                <button className="hbtn" onClick={doLogout} style={{ minHeight: 34, fontSize: 13 }}>Odhlásit</button>
-              </span>
-            )}
-          </nav>
-        </div>
-      </header>
-
-      <section style={{ background: '#15171A', color: '#FFFFFF', padding: '8px 0 30px' }}>
-        <div style={{ maxWidth: 1360, margin: '0 auto', padding: '0 24px' }}>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4.4vw, 50px)', lineHeight: 1.05, margin: '10px 0 8px', letterSpacing: '-0.02em' }}>Najdi svůj další start.</h1>
-          <p style={{ margin: 0, color: '#C9CCD1', fontSize: 16, maxWidth: '70ch' }}>{RACES.length} závodů sezóny 2026/27 z termínovky ČAS, registrací stopnito.cz, seriálů RunCzech a Běhej lesy a celostátní termínovky running.life – ze všech 14 krajů.</p>
-        </div>
-      </section>
-
-      <div style={{ maxWidth: 1360, margin: '0 auto', padding: '26px 24px 64px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        {!isMuj && (
+  const filterPanel = (
           <section aria-label="Filtry" className="qpanel">
             <div className="qrow">
               <p className="qlab">Kdy:</p>
@@ -386,32 +343,138 @@ export default function App() {
               </div>
             )}
           </section>
-        )}
+  )
 
-        <main style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
+  const wk = weekend(0)
+  const onWk = s.dateFrom === wk[0] && s.dateTo === wk[1]
+  const QUICK = [
+    { l: 'Tento víkend', on: onWk, f: () => set(onWk ? { dateFrom: '', dateTo: '' } : { dateFrom: wk[0], dateTo: wk[1], month: '' }) },
+    { l: 'Do 50 km', on: s.radius === 50, f: () => set({ radius: s.radius === 50 ? 0 : 50 }) },
+    { l: '5 km', on: s.distC === 5, f: () => pickCenter(5) },
+    { l: '10 km', on: s.distC === 10, f: () => pickCenter(10) },
+    { l: 'Půlmaraton', on: s.distC === 21.1, f: () => pickCenter(21.1) },
+    { l: 'Trail', on: s.types.includes('trail'), f: () => tog('types', 'trail') },
+    { l: 'Silnice', on: s.types.includes('silnice'), f: () => tog('types', 'silnice') },
+    { l: 'S online přihláškou', on: s.regOnly, f: () => set({ regOnly: !s.regOnly }) },
+  ]
+  const fCount = active.filter((a) => !a.label.startsWith('„')).length
+  const openLoc = () => { setSheet(true); setTimeout(() => { const el = document.getElementById('loc'); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); el.select() } }, 80) }
+  const goView = (v) => { if (v === 'muj') return showMuj(); setS((p) => ({ ...p, view: v })); window.scrollTo(0, 0) }
 
+  return (
+    <div className={mob ? 'mroot' : ''} style={{ fontFamily: 'Inter, sans-serif', color: '#15171A', background: '#F5F4EF', minHeight: '100vh' }}>
+      {DEMO && (
+        <div role="status" style={{ background: '#FCE9DD', color: '#7C2D12', fontSize: 13, padding: '8px 16px', textAlign: 'center' }}>
+          {mob ? 'Testovací verze – účty jen v tomto prohlížeči' : 'Testovací verze · účty a uložené závody se zatím ukládají jen v tomto prohlížeči'}
+        </div>
+      )}
+      {mob ? (<>
+      <header className="mhead">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: '#C2410C', display: 'grid', placeItems: 'center', color: '#fff' }}>
+            <Icon size={17} w={2.2} d={<><path d="M4 21V4" /><path d="M4 4h12l-2 4 2 4H4" /></>} />
+          </div>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 19 }}>Startovka</span>
+        </div>
+        {!user ? <button className="hbtn" onClick={() => openAuth('login')} style={{ minHeight: 36 }}>Přihlásit</button>
+          : <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span className="avatar" aria-hidden="true" style={{ width: 30, height: 30, fontSize: 12 }}>{initials}</span><button className="hbtn" onClick={doLogout} style={{ minHeight: 34, fontSize: 13, padding: '0 10px' }}>Odhlásit</button></span>}
+      </header>
+      </>) : (<>
+      <header style={{ background: '#15171A', color: '#FFFFFF' }}>
+        <div style={{ maxWidth: 1360, margin: '0 auto', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 9, background: '#C2410C', display: 'grid', placeItems: 'center', color: '#fff' }}>
+              <Icon size={20} w={2.2} d={<><path d="M4 21V4" /><path d="M4 4h12l-2 4 2 4H4" /></>} />
+            </div>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22 }}>Startovka</span>
+            <span style={{ fontSize: 13, color: '#B8BCC2' }}>kalendář běžeckých závodů</span>
+          </div>
+          <nav aria-label="Hlavní" style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 14, flexWrap: 'wrap' }}>
+            <a href="#" onClick={(e) => { e.preventDefault(); setS((p) => ({ ...p, view: 'seznam' })) }} style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 600 }}>Závody</a>
+            <a href="#zdroje" style={{ color: '#B8BCC2', textDecoration: 'none' }}>Zdroje dat</a>
+            <span style={{ display: 'inline-flex', border: '1px solid #3A3E45', borderRadius: 8, overflow: 'hidden' }}>
+              <button aria-pressed="true" style={segBtn(true)}>CZ</button>
+              <button aria-pressed="false" style={segBtn(false)} title="Anglická verze se připravuje">EN</button>
+            </span>
+            {!user ? (
+              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button className="hbtn" onClick={() => openAuth('login')}>Přihlásit</button>
+                <button className="btn" onClick={() => openAuth('register')} style={{ minHeight: 38 }}>Registrace</button>
+              </span>
+            ) : (
+              <span style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button className="hbtn" onClick={showMuj}>♥ Můj kalendář ({saved.length})</button>
+                <span className="avatar" aria-hidden="true">{initials}</span>
+                <span className="uemail" style={{ fontSize: 13, color: '#C9CCD1', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</span>
+                <button className="hbtn" onClick={doLogout} style={{ minHeight: 34, fontSize: 13 }}>Odhlásit</button>
+              </span>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      <section style={{ background: '#15171A', color: '#FFFFFF', padding: '8px 0 30px' }}>
+        <div style={{ maxWidth: 1360, margin: '0 auto', padding: '0 24px' }}>
+          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4.4vw, 50px)', lineHeight: 1.05, margin: '10px 0 8px', letterSpacing: '-0.02em' }}>Najdi svůj další start.</h1>
+          <p style={{ margin: 0, color: '#C9CCD1', fontSize: 16, maxWidth: '70ch' }}>{RACES.length} závodů sezóny 2026/27 z termínovky ČAS, registrací stopnito.cz, seriálů RunCzech a Běhej lesy a celostátní termínovky running.life – ze všech 14 krajů.</p>
+        </div>
+      </section>
+      </>)}
+
+      <div style={{ maxWidth: 1360, margin: '0 auto', padding: '26px 24px 64px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {!isMuj && !mob && filterPanel}
+
+        <main style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: mob ? 12 : 18 }}>
+          {mob && !isMuj && (
+            <div className="mtop">
+              <div className="msbar">
+                <label htmlFor="mq" className="sr">Hledat závod nebo místo</label>
+                <input id="mq" type="search" value={s.q} onChange={(e) => set({ q: e.target.value })} placeholder="Hledat závod nebo místo" />
+                <button className={fCount ? 'mfilt on' : 'mfilt'} onClick={() => setSheet(true)} aria-label={'Filtry' + (fCount ? ', aktivních ' + fCount : '')}>
+                  <Icon size={18} d={<path d="M4 6h16M7 12h10M10 18h4" />} />Filtry{fCount ? <span className="fbadge">{fCount}</span> : null}
+                </button>
+              </div>
+              <div className="mquick" role="group" aria-label="Rychlý výběr">
+                {QUICK.map((q) => <button key={q.l} className={q.on ? 'qc on' : 'qc'} aria-pressed={q.on} onClick={q.f}>{q.l}</button>)}
+              </div>
+            </div>
+          )}
+
+          {mob ? (
+            <div className="mtool">
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, fontWeight: 700, whiteSpace: 'nowrap' }}>{countLabel}</span>
+                {!isMuj && <button className="mloc" onClick={openLoc}>od: {home.name}</button>}
+              </div>
+              {!isMuj && <select aria-label="Řadit" value={s.sort} onChange={(e) => setS((p) => ({ ...p, sort: e.target.value }))} style={{ minHeight: 38, fontSize: 14, padding: '0 8px' }}>
+                <option value="datum">Podle data</option><option value="blizko">Nejblíž</option><option value="kratke">Nejkratší</option>
+              </select>}
+            </div>
+          ) : (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 700 }}>{countLabel}</span>
-              {!isMuj && <span style={{ fontSize: 14, color: '#5A5F66' }}>{(s.radius ? 'do ' + s.radius + ' km od: ' + home.name : 'v celé ČR · vzdálenosti od: ' + home.name) + ' · ' + nReg + ' s online přihláškou'}</span>}
+              {!isMuj && <span style={{ fontSize: mob ? 13 : 14, color: '#5A5F66' }}>{mob ? 'od: ' + home.name : ((s.radius ? 'do ' + s.radius + ' km od: ' + home.name : 'v celé ČR · vzdálenosti od: ' + home.name) + ' · ' + nReg + ' s online přihláškou')}</span>}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               {!isMuj && <>
-                <label htmlFor="sort" style={{ fontSize: 13, color: '#5A5F66' }}>Řadit</label>
-                <select id="sort" value={s.sort} onChange={(e) => setS((p) => ({ ...p, sort: e.target.value }))} style={{ minHeight: 40 }}>
+                <label htmlFor="sort" className={mob ? 'sr' : ''} style={{ fontSize: 13, color: '#5A5F66' }}>Řadit</label>
+                <select id="sort" value={s.sort} onChange={(e) => setS((p) => ({ ...p, sort: e.target.value }))} style={{ minHeight: mob ? 38 : 40, fontSize: mob ? 14 : 15 }}>
                   <option value="datum">Podle data</option><option value="blizko">Nejblíž ode mě</option><option value="kratke">Nejkratší trať</option>
                 </select>
               </>}
-              <span style={{ display: 'inline-flex', background: '#ECEAE3', borderRadius: 10, padding: 3 }}>
+              {!mob && <span style={{ display: 'inline-flex', background: '#ECEAE3', borderRadius: 10, padding: 3 }}>
                 <button className={s.view === 'seznam' ? 'seg on' : 'seg'} aria-pressed={s.view === 'seznam'} onClick={() => setS((p) => ({ ...p, view: 'seznam' }))}>Seznam</button>
                 <button className={s.view === 'mapa' ? 'seg on' : 'seg'} aria-pressed={s.view === 'mapa'} onClick={() => setS((p) => ({ ...p, view: 'mapa' }))}>Mapa</button>
                 <button className={isMuj ? 'seg on' : 'seg'} aria-pressed={isMuj} onClick={showMuj}>♥ Můj kalendář</button>
-              </span>
+              </span>}
             </div>
           </div>
 
+          )}
+
           {!isMuj && active.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className={mob ? 'mscroll' : ''} style={{ display: 'flex', flexWrap: mob ? 'nowrap' : 'wrap', gap: 8 }}>
               {active.map((a) => <button key={a.label} className="chip" onClick={a.fn} aria-label={'Odebrat filtr ' + a.label} style={{ background: '#FCE9DD', borderColor: '#F2C4A6', color: '#7C2D12', minHeight: 34, padding: '4px 12px' }}>{a.label}  ✕</button>)}
             </div>
           )}
@@ -443,7 +506,7 @@ export default function App() {
 
           {(s.view === 'seznam' || isMuj) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {shown.map((r) => <RaceCard key={r.id} r={r} km={kmOf(r)} loc={home.name} saved={!!user && saved.includes(r.id)} onSave={() => toggleSave(r.id)} />)}
+              {shown.map((r) => <RaceCard key={r.id} r={r} km={kmOf(r)} loc={home.name} saved={!!user && saved.includes(r.id)} onSave={() => toggleSave(r.id)} mob={mob} />)}
               {!isMuj && n > s.limit && <button className="ghost" onClick={() => setS((p) => ({ ...p, limit: p.limit + PAGE }))} style={{ alignSelf: 'center', minHeight: 44, padding: '0 22px' }}>Zobrazit další ({n - s.limit})</button>}
               {!isMuj && n === 0 && (
                 <div style={{ background: '#FFFFFF', border: '1px dashed #B9B5A8', borderRadius: 14, padding: 36, textAlign: 'center' }}>
@@ -456,7 +519,7 @@ export default function App() {
           )}
 
           {s.view === 'mapa' && (
-            <div style={{ position: 'relative', height: 560, borderRadius: 14, border: '1px solid #E2E0D8', overflow: 'hidden', backgroundColor: '#EEF1EA', backgroundImage: 'linear-gradient(#DDE3D6 1px, transparent 1px), linear-gradient(90deg, #DDE3D6 1px, transparent 1px)', backgroundSize: '60px 60px' }}>
+            <div style={{ position: 'relative', height: mob ? '68vh' : 560, borderRadius: 14, border: '1px solid #E2E0D8', overflow: 'hidden', backgroundColor: '#EEF1EA', backgroundImage: 'linear-gradient(#DDE3D6 1px, transparent 1px), linear-gradient(90deg, #DDE3D6 1px, transparent 1px)', backgroundSize: '60px 60px' }}>
               <span style={{ position: 'absolute', left: 14, top: 12, fontSize: 12, color: '#5A5F66', background: 'rgba(255,255,255,.9)', padding: '4px 8px', borderRadius: 6 }}>Náhled mapy · skutečný mapový podklad přidáme · popisky se ukážou při ≤ 12 závodech</span>
               <div style={{ position: 'absolute', inset: '40px 30px 30px 30px' }}>
                 <span style={{ position: 'absolute', left: hx + '%', top: hy + '%', width: 18, height: 18, margin: '-9px 0 0 -9px', borderRadius: '50%', background: '#15171A', border: '3px solid #FFFFFF' }} />
@@ -469,6 +532,29 @@ export default function App() {
             </div>
           )}
 
+          {mob ? (
+            <details id="zdroje" className="msrc"><summary>Zdroje dat a registrační platformy</summary>
+          <section aria-label="Zdroje dat" style={{ background: '#FFFFFF', border: '1px solid #E2E0D8', borderRadius: 14, padding: '18px 20px', marginTop: 10 }}>
+            
+            <p style={{ margin: '0 0 14px', fontSize: 14, color: '#4A4F56', maxWidth: '80ch' }}>Kalendář skládá závody z oficiálních termínovek, seriálů a registračních systémů. U každého závodu si pamatujeme, odkud termín máme, a vedeme na platformu, kde se dá přihlásit, najít startovka a výsledky.</p>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="ptab">
+                <thead><tr><th>Platforma</th><th>Co nabízí</th><th>V kalendáři</th><th>Stav</th></tr></thead>
+                <tbody>
+                  <tr><td><a href="https://ceskybeh.cz/terminovka/" target="_blank" rel="noopener">Český běh – termínovka ČAS</a></td><td>Oficiální termínovka ČAS: čas startu, místo, startovné, archiv výsledků.</td><td>{cntP('cb')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
+                  <tr><td><a href="https://www.stopnito.cz/zavody" target="_blank" rel="noopener">stopnito.cz</a></td><td>Registrace, seznam přihlášených, výsledky, GPS tracking.</td><td>{cntP('sn')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
+                  <tr><td><a href="https://www.runczech.com" target="_blank" rel="noopener">RunCzech</a></td><td>Vlastní registrace a výsledky seriálu.</td><td>{cntP('rc')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
+                  <tr><td><a href="https://behejlesy.cz" target="_blank" rel="noopener">Běhej lesy</a></td><td>Vlastní registrace a výsledky seriálu.</td><td>{cntP('bl')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
+                  <tr><td><a href="https://zavody.4timing.cz/" target="_blank" rel="noopener">4timing.cz</a></td><td>Časomíra: připravované závody, přihlášky, výsledky.</td><td>—</td><td><span className="st st-next">Další krok</span></td></tr>
+                  <tr><td><a href="https://www.nazavody.cz" target="_blank" rel="noopener">naZávody.cz</a></td><td>Registrační systém s veřejným API.</td><td>—</td><td><span className="st st-next">Další krok – API</span></td></tr>
+                  <tr><td><a href="https://running.life/terminovka/cesko" target="_blank" rel="noopener">running.life</a></td><td>Celostátní termínovka – doplňuje závody ze všech krajů. Údaje ověřuj u pořadatele.</td><td>{cntP('rl')} závodů</td><td><span className="st st-low">Doplňkový</span></td></tr>
+                  <tr><td><a href="https://gotrail.run/trailove-behy/cesko/liberecky-kraj" target="_blank" rel="noopener">gotrail.run</a></td><td>Agregátor trailů – jen pro objevování.</td><td>{cntP('gt')} závodů</td><td><span className="st st-low">Doplňkový</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+            </details>
+          ) : (
           <section id="zdroje" aria-label="Zdroje dat" style={{ background: '#FFFFFF', border: '1px solid #E2E0D8', borderRadius: 14, padding: '18px 20px', marginTop: 10 }}>
             <h2 style={{ margin: '0 0 4px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 22 }}>Zdroje dat a registrační platformy</h2>
             <p style={{ margin: '0 0 14px', fontSize: 14, color: '#4A4F56', maxWidth: '80ch' }}>Kalendář skládá závody z oficiálních termínovek, seriálů a registračních systémů. U každého závodu si pamatujeme, odkud termín máme, a vedeme na platformu, kde se dá přihlásit, najít startovka a výsledky.</p>
@@ -488,9 +574,32 @@ export default function App() {
               </table>
             </div>
           </section>
+          )}
           <p style={{ margin: '8px 0 0', fontSize: 12.5, color: '#5A5F66', lineHeight: 1.6 }}>Stav dat k 17. 11. 2026. Souřadnice jsou zatím střed obce (odhad). Vzdálenost a čas cesty jsou orientační, počítané z Turnova. Odkazy na stopnito.cz vedou na přehled závodů.</p>
         </main>
       </div>
+
+      {mob && (
+        <nav className="mnav" aria-label="Zobrazení">
+          <button className={s.view === 'seznam' && !isMuj ? 'on' : ''} onClick={() => goView('seznam')}><Icon size={20} d={<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />} />Závody</button>
+          <button className={s.view === 'mapa' ? 'on' : ''} onClick={() => goView('mapa')}><Icon size={20} d={<><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z" /><path d="M9 4v14M15 6v14" /></>} />Mapa</button>
+          <button className={isMuj ? 'on' : ''} onClick={() => goView('muj')}><Icon size={20} d={<path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" />} />Můj kalendář{user && saved.length ? ' (' + saved.length + ')' : ''}</button>
+        </nav>
+      )}
+
+      {mob && sheet && (
+        <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+          <div className="shead">
+            <h2 id="shTitle">Filtry</h2>
+            <button className="xbtn" onClick={() => setSheet(false)} aria-label="Zavřít filtry"><Icon size={16} w={2.4} d={<path d="M6 6l12 12M18 6L6 18" />} /></button>
+          </div>
+          <div className="sbody">{filterPanel}</div>
+          <div className="sfoot">
+            <button className="ghost" onClick={reset} disabled={!active.length}>Zrušit vše</button>
+            <button className="btn" onClick={() => { setSheet(false); window.scrollTo(0, 0) }}>Zobrazit {countLabel}</button>
+          </div>
+        </div>
+      )}
 
       {auth.open && (
         <div onClick={(e) => { if (e.target === e.currentTarget) closeAuth() }} style={{ position: 'fixed', inset: 0, background: 'rgba(21,23,26,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }}>
@@ -520,7 +629,8 @@ export default function App() {
   )
 }
 
-function RaceCard({ r, km, loc, saved, onSave }) {
+function RaceCard({ r, km, loc, saved, onSave, mob }) {
+  const [open, setOpen] = useState(false)
   const d = new Date(r.from + 'T12:00:00')
   const d2 = r.to ? new Date(r.to + 'T12:00:00') : null
   const ll = r.lat + ',' + r.lon
@@ -538,6 +648,61 @@ function RaceCard({ r, km, loc, saved, onSave }) {
   if (r.start && !r.to) { const [h, m] = r.start.split(':'); const h0 = parseInt(h, 10); gdates = ymd + 'T' + p2(h0) + m + '00/' + ymd + 'T' + p2(Math.min(h0 + 3, 23)) + m + '00' }
   const where = placeFull + ', ' + regionLabel(r.region)
   const gcal = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(r.name) + '&dates=' + gdates + '&ctz=Europe/Prague&location=' + encodeURIComponent(where) + '&details=' + encodeURIComponent((r.web || '') + (lk.reg ? ' · přihláška: ' + lk.reg[1] : ''))
+
+  if (mob) {
+    const main = lk.reg ? ['Přihláška', lk.reg[1]] : ['Web závodu', r.web]
+    const shortDow = d2 ? DOW[d.getDay()].slice(0, 2) + '–' + DOW[d2.getDay()].slice(0, 2) : DOW[d.getDay()].slice(0, 2)
+    return (
+      <article className="mcard">
+        <div className="mrow" onClick={() => setOpen(!open)}>
+          <div className="mdate">
+            <b>{d2 ? d.getDate() + '.–' + d2.getDate() + '.' : d.getDate() + '.'}</b>
+            <span>{MON[d.getMonth()]}</span>
+            <small>{shortDow}</small>
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h3>{r.name}</h3>
+            <p className="mplace">{r.place.split(' – ')[0]} · {km <= 5 ? 'kousek od tebe' : '≈ ' + km + ' km'}{r.start ? ' · ' + r.start : ''}</p>
+            <div className="mtrk">
+              <span className={'surf s-' + r.surface}>{SURFLAB[r.surface] || r.surface}</span>
+              {r.tracks.slice(0, 4).map((t, i) => <span key={i} className="trk"><b>{fmtKm(t[0])} km</b></span>)}
+              {r.tracks.length > 4 && <span className="trk">+{r.tracks.length - 4}</span>}
+            </div>
+          </div>
+          <button className={saved ? 'mheart on' : 'mheart'} aria-pressed={saved} aria-label={saved ? 'Odebrat z mého kalendáře' : 'Uložit do mého kalendáře'} onClick={(e) => { e.stopPropagation(); onSave() }}>{saved ? '♥' : '♡'}</button>
+        </div>
+        <div className="mact">
+          <a className={lk.reg ? 'btn' : 'ghost'} href={main[1]} target="_blank" rel="noopener">{main[0]}</a>
+          <a className="ghost" href={'https://mapy.cz/fnc/v1/route?mapset=traffic&end=' + r.lon + ',' + r.lat} target="_blank" rel="noopener">Navigovat</a>
+          <button className="ghost" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'Méně' : 'Více'}</button>
+        </div>
+        {open && (
+          <div className="mmore">
+            <p style={{ margin: 0 }}><span className={r.status === 'oficialni' ? 'tag ok' : 'tag est'}>{r.status === 'oficialni' ? '✓ Oficiální termín' : 'Z agregátoru – ověř u pořadatele'}</span>{r.series ? <span className="tag" style={{ marginLeft: 6 }}>{r.series}</span> : null}</p>
+            <p style={{ margin: 0 }}>{placeFull}, {regionLabel(r.region)} · {travel}</p>
+            <p style={{ margin: 0 }}>{r.start ? 'Start ' + r.start : 'Čas startu zatím nezveřejněn'}{r.kids ? ' · dětské závody' : ''}{r.fee ? ' · startovné ' + r.fee : ''}</p>
+            {(r.tracks.some((t) => t[1] !== null) || r.flags.length > 0) && <div className="mtrk">{r.tracks.filter((t) => t[1] !== null).map((t, i) => <span key={i} className="trk">{fmtKm(t[0])} km · ↑ {t[1]} m</span>)}{r.flags.map((f) => <span key={f} className="trk">{f}</span>)}</div>}
+            {trackNote && <p style={{ margin: 0, fontSize: 12.5, color: '#5A5F66' }}>{trackNote}</p>}
+            <div className="mlinks">
+              {lk.reg && <a href={r.web} target="_blank" rel="noopener">Web závodu</a>}
+              {lk.start && <a href={lk.start[1]} target="_blank" rel="noopener">Startovka</a>}
+              {lk.res && <a href={lk.res[1]} target="_blank" rel="noopener">Výsledky</a>}
+            </div>
+            <div className="mlinks"><span>Navigace:</span>
+              <a href={'https://mapy.cz/fnc/v1/route?mapset=traffic&end=' + r.lon + ',' + r.lat} target="_blank" rel="noopener">Mapy.cz</a>
+              <a href={'https://www.google.com/maps/dir/?api=1&destination=' + ll} target="_blank" rel="noopener">Google</a>
+              <a href={'https://waze.com/ul?ll=' + ll + '&navigate=yes'} target="_blank" rel="noopener">Waze</a>
+            </div>
+            <div className="mlinks"><span>Do kalendáře:</span>
+              <a href={gcal} target="_blank" rel="noopener">Google</a>
+              <button onClick={() => downloadIcs([r], r.id + '.ics', r.name)}>Apple / Outlook</button>
+            </div>
+            <p style={{ margin: 0, fontSize: 12, color: '#5A5F66' }}>Zdroj: {r.src.map((x, i) => <span key={x[1]}>{i ? ', ' : ''}<a href={x[1]} target="_blank" rel="noopener" style={{ color: '#5A5F66' }}>{x[0]}</a></span>)}</p>
+          </div>
+        )}
+      </article>
+    )
+  }
 
   return (
     <article className="card">
