@@ -283,7 +283,7 @@ export default function App() {
       <section style={{ background: '#15171A', color: '#FFFFFF', padding: '8px 0 30px' }}>
         <div style={{ maxWidth: 1360, margin: '0 auto', padding: '0 24px' }}>
           <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4.4vw, 50px)', lineHeight: 1.05, margin: '10px 0 8px', letterSpacing: '-0.02em' }}>Najdi svůj další start.</h1>
-          <p style={{ margin: 0, color: '#C9CCD1', fontSize: 16, maxWidth: '70ch' }}>{RACES.length} závodů sezóny 2026/27 z termínovky ČAS, registrací stopnito.cz, seriálů RunCzech a Běhej lesy a trailů v Libereckém kraji.</p>
+          <p style={{ margin: 0, color: '#C9CCD1', fontSize: 16, maxWidth: '70ch' }}>{RACES.length} závodů sezóny 2026/27 z termínovky ČAS, registrací stopnito.cz, seriálů RunCzech a Běhej lesy a celostátní termínovky running.life – ze všech 14 krajů.</p>
         </div>
       </section>
 
@@ -482,6 +482,7 @@ export default function App() {
                   <tr><td><a href="https://behejlesy.cz" target="_blank" rel="noopener">Běhej lesy</a></td><td>Vlastní registrace a výsledky seriálu.</td><td>{cntP('bl')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
                   <tr><td><a href="https://zavody.4timing.cz/" target="_blank" rel="noopener">4timing.cz</a></td><td>Časomíra: připravované závody, přihlášky, výsledky.</td><td>—</td><td><span className="st st-next">Další krok</span></td></tr>
                   <tr><td><a href="https://www.nazavody.cz" target="_blank" rel="noopener">naZávody.cz</a></td><td>Registrační systém s veřejným API.</td><td>—</td><td><span className="st st-next">Další krok – API</span></td></tr>
+                  <tr><td><a href="https://running.life/terminovka/cesko" target="_blank" rel="noopener">running.life</a></td><td>Celostátní termínovka – doplňuje závody ze všech krajů. Údaje ověřuj u pořadatele.</td><td>{cntP('rl')} závodů</td><td><span className="st st-low">Doplňkový</span></td></tr>
                   <tr><td><a href="https://gotrail.run/trailove-behy/cesko/liberecky-kraj" target="_blank" rel="noopener">gotrail.run</a></td><td>Agregátor trailů – jen pro objevování.</td><td>{cntP('gt')} závodů</td><td><span className="st st-low">Doplňkový</span></td></tr>
                 </tbody>
               </table>

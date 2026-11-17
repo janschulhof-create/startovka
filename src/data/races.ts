@@ -159,6 +159,388 @@ CB.split('\n').forEach(function(line){
   var src=[['Český běh (termínovka ČAS)',cbDetail(slug)]];if(ex.plat==='sn')src.push(S.SN);if(ex.plat==='gt')src.push(S.GT);
   RACES.push(R({id:'cb-'+slug,name:f[1],from:f[0],place:f[2],region:f[3],lat:parseFloat(f[8]),lon:parseFloat(f[9]),surface:f[5],tracks:dists.map(function(d){return [d,null];}),start:f[6]||null,kids:f[10].indexOf('k')>=0,flags:flags,status:'oficialni',plat:plat,links:links,src:src,web:ex.web||cbDetail(slug),venue:ex.venue,fee:ex.fee,note:ex.note}));
 });
+/* running.life – celostátní termínovka (agregátor), staženo 17. 11. 2026; bez duplicit s výše uvedenými */
+function rlDetail(slug){return slug?'https://running.life/cs/akce/'+slug:'https://running.life/terminovka/cesko';}
+var RL_EXTRA = {
+  'vanocni-kros-myto':{reg:['4timing.cz','https://prihlasky.4timing.cz/myto'],res:['4timing.cz','https://www.4timing.cz']},
+  'beh-partyzanskou-stezkou':{web:'https://brdskypohar.cz'}
+};
+var RL = `2026-11-21||Běžecké dvojice Příbram|Příbram|Středočeský|10|neuvedeno|bezecke-dvojice-pribram|49.690|14.010|
+2026-11-21||Prádelna trail|Brno|Jihomoravský|21.1|trail|pradelna-trail|49.195|16.608|
+2026-11-21||Slezská zimní liga – Opava|Opava|Moravskoslezský||trail|slezska-zimni-liga-opava|49.938|17.902|
+2026-11-21||Lysacup – Visalaje, parkoviště|Zlatník|Moravskoslezský|8|trail|lysacup-visalaje-parkoviste|49.568|18.470|
+2026-11-22||Plzeňská třicítka, dvacítka a maraton na atletické dráze|Plzeň|Plzeňský|3/10/20/30/42.2|jiny|plzenska-tricitka-a-dvacitka-a-maraton-na-atleticke-draze|49.747|13.378|
+2026-11-22||Běh Stříbrnou stezkou pro Nadační fond P3tule|Tábor|Jihočeský|4/7|trail|beh-stribrnou-stezkou-pro-nadacni-fond-p3tule|49.414|14.658|
+2026-11-28||Čertovskej wintertrail|Hamr na Jezeře|Liberecký|17/33|trail|certovskej-wintertrail|50.700|14.840|
+2026-11-28||Christmas Night Run Brno|Brno|Jihomoravský||neuvedeno|christmas-night-run-brno|49.195|16.608|
+2026-11-28||Mikulášská dvacítka|Stříbro|Plzeňský|20|neuvedeno|mikulasska-dvacitka|49.756|12.997|
+2026-11-28||Tour de Prague|Praha|Praha|4/6/11/15|trail|tour-de-prague|50.087|14.421|
+2026-11-28||Vltavskej nokáč|Praha – Vyšehrad|Praha||neuvedeno|vltavskej-nokac|50.087|14.421|
+2026-11-29||Čertoviny – Malé Přílepy|Chyňava|Středočeský|3/5/8|trail|certoviny-male-prilepy|50.027|14.074|
+2026-11-29||Lysacup – Janovice – Bystré|Malenovice|Moravskoslezský|8|trail|lysacup-janovice-bystre|49.580|18.405|
+2026-12-02||SK Žďárák – Do Veselí|Hamry nad Sázavou|Vysočina|8|trail|sk-zdarak-do-veseli|49.565|15.905|
+2026-12-04|2026-12-06|Pražská stovka|Praha|Praha|25/35/50/70/130|trail|prazska-stovka|50.087|14.421|
+2026-12-04||Vánoční večerní běh – Líbeznice|Líbeznice|Středočeský|5|trail|vanocni-vecerni-beh-libeznice|50.192|14.494|
+2026-12-05||Maraton Praha – Dobříš|Praha|Praha|10/21.1/42.2|trail|maraton-praha-dobris|50.087|14.421|
+2026-12-05||Gladiator Race Taxis|Pardubice|Pardubický|6|OCR|gladiator-race-taxis|50.034|15.781|
+2026-12-05||Běh na 2 míle – Praha, Stromovka|Praha|Praha|3.2|neuvedeno|beh-na-2-mile-praha-stromovka|50.087|14.421|
+2026-12-05||Běh na 2 míle – Zlín|Zlín|Zlínský|3.2|neuvedeno|beh-na-2-mile-zlin|49.226|17.667|
+2026-12-05||Adventní běh Žatec|Žatec|Ústecký|4/7|neuvedeno|adventni-beh-zatec|50.327|13.546|
+2026-12-05||Vánoční běh Rudolfa Těsnohlídka|Bílovice nad Svitavou|Jihomoravský|6|neuvedeno|vanocni-beh-rudolfa-tesnohlidka|49.247|16.672|
+2026-12-05||ZBL Mikulášský běh|Úpice|Královéhradecký|6|neuvedeno|zbl-mikulassky-beh|50.512|16.016|
+2026-12-05||Christmas Night Run Olomouc|Olomouc|Olomoucký|5|neuvedeno|christmas-night-run-olomouc|49.594|17.251|
+2026-12-05||Frenštát pod Radhoštěm Trail 10K|Frenštát pod Radhoštěm|Moravskoslezský|10|trail|frenstat-pod-radhostem-trail-10k|49.548|18.211|
+2026-12-05||Boskovický běh|Boskovice|Jihomoravský|5/10|neuvedeno|boskovicky-beh|49.488|16.660|
+2026-12-05||Mikulášský vodácký půlmaraton – Hradec Králové|Hradec Králové|Královéhradecký|5/10/20/21.1|neuvedeno|mikulassky-vodacky-pulmaraton-hradec-kralove|50.209|15.832|
+2026-12-05|2026-12-06|Last man standing run Vysočina|Želiv|Vysočina|7|trail|last-man-standing-run-vysocina|49.530|15.222|b
+2026-12-05||Čertovská 5|Unhošť|Středočeský|6|neuvedeno|certovska-5|50.085|14.130|
+2026-12-05||Čertovský běh|Damníkov|Pardubický|4|neuvedeno|certovsky-beh|49.878|16.555|
+2026-12-06||Běh Boudeckou roklí|Vojtěchov|Středočeský|7|trail|beh-boudeckou-rokli|49.894|13.959|
+2026-12-06||Blanenský zavírák|Blansko|Jihomoravský|7|neuvedeno|blanensky-zavirak|49.363|16.644|
+2026-12-06||Lysacup – Ostravice, hřiště|Ostravice|Moravskoslezský|9|trail|lysacup-ostravice-hriste-2026-12-06|49.535|18.392|
+2026-12-10||Prosincový běh Smetanovými sady|Olomouc|Olomoucký|7|neuvedeno|prosincovy-beh-smetanovymi-sady|49.594|17.251|
+2026-12-12||Běh na Býčí skálu|Brno|Jihomoravský|15/30|trail|beh-na-byci-skalu|49.195|16.608|
+2026-12-12||Běh okolo náměšťského zámku|Náměšť na Hané|Olomoucký|5/10|trail|beh-okolo-namestskeho-zamku|49.603|17.063|
+2026-12-13||Adventní Kunětická devítka|Ráby|Pardubický|4/9|neuvedeno|adventni-kuneticka-devitka|50.081|15.816|
+2026-12-13||Kunětická devítka – Středeční pohár v cross-country|Kunětická hora|Pardubický|5/9|trail|kuneticka-devitka-stredecni-pohar-v-cross-country-behu|50.080|15.813|
+2026-12-18||Lysacup – Malenovice, Rajská bouda|Malenovice|Moravskoslezský|6|trail|lysacup-malenovice-rajska-bouda|49.580|18.405|
+2026-12-19||Vánoční kros Mýto|Mýto|Plzeňský|5|trail|vanocni-kros-myto|49.789|13.735|
+2026-12-19||Adventní vánoční běh|Děčín|Ústecký|5|neuvedeno|adventni-vanocni-beh|50.773|14.196|
+2026-12-19||Lysacup – Krásná, most|Nižní Mohelnice|Moravskoslezský|5|trail|lysacup-krasna-most|49.603|18.429|
+2026-12-19||Lysacup – Zlatník, sjezdovka|Zlatník|Moravskoslezský|5|trail|lysacup-zlatnik-sjezdovka|49.568|18.470|
+2026-12-20||Večerník Praha|Praha|Praha||trail|vecernik-praha|50.087|14.421|
+2026-12-20||Českobrodská vánoční desítka|Český Brod|Středočeský|10|neuvedeno|ceskobrodska-vanocni-desitka|50.074|14.861|
+2026-12-20||Vánoční sprint – Hradec Králové|Hradec Králové|Královéhradecký||trail|vanocni-sprint-hradec-kralove|50.209|15.832|
+2026-12-23||Vánoční pohár – Plumlov|Plumlov|Olomoucký||trail|vanocni-pohar-plumlov|49.466|17.015|
+2026-12-26||Štěpánský běh Kyjov|Kyjov|Jihomoravský||neuvedeno|stepansky-beh-kyjov|49.010|17.123|
+2026-12-26||Vánoční maraton Plzeň|Plzeň|Plzeňský|11/21.1/42.2|neuvedeno|vanocni-maraton-plzen|49.747|13.378|
+2026-12-26||Vánoční běh Hlučínem|Hlučín|Moravskoslezský|4|neuvedeno|vanocni-beh-hlucinem|49.898|18.192|
+2026-12-26||Memoriál Jarušky Machovcové|Most|Ústecký||trail|memorial-jarusky-machovcove|50.503|13.636|
+2026-12-26||Vánoční běh pod Černou věží|Klatovy|Plzeňský|4/5|neuvedeno|vanocni-beh-pod-cernou-vezi|49.396|13.295|
+2026-12-26||Závěrka – Velký Beranov|Velký Beranov|Vysočina||trail|zaverka-velky-beranov|49.405|15.667|
+2026-12-26||Náměšťský štěpánský běh|Náměšť na Hané|Olomoucký|5|neuvedeno|namestsky-stepansky-beh|49.603|17.063|
+2026-12-26||Vánoční běh na Sněžník|Děčín|Ústecký|25|trail|vanocni-beh-na-sneznik|50.773|14.196|
+2026-12-27||Hraběnčino běhání – memoriál Jaroslava Parmy|Petrovice|Jihomoravský|5|neuvedeno|hrabencino-behani-memorial-jaroslava-parmy|49.413|16.712|
+2026-12-30||KleKluLi|Český Krumlov|Jihočeský|28|trail|klekluli|48.811|14.315|
+2026-12-31||Vikýřovická dvanáctka|Vikýřovice|Olomoucký|12|trail|vikyrovicka-dvanactka|49.978|17.012|
+2027-01-01||Novoroční výstup k Homolce|Bečov nad Teplou|Karlovarský|6|trail|novorocni-vystup-k-homolce|50.083|12.838|
+2027-01-01||Novoroční Konopiště|Benešov|Středočeský|5|neuvedeno|novorocni-konopiste|49.782|14.687|
+2027-01-01||Novoroční půlmaraton – Brno|Brno|Jihomoravský|10/21.1|neuvedeno|novorocni-pulmaraton-brno|49.195|16.608|
+2027-01-01||Křinecký novoroční běh|Křinec|Středočeský|6|neuvedeno|krinecky-novorocni-beh|50.264|15.138|
+2027-01-03||Běh historickou Kadaní|Kadaň|Ústecký|3/10|neuvedeno|beh-historickou-kadani|50.383|13.267|
+2027-01-03||Lysacup – Frýdlant nad Ostravicí|Frýdlant nad Ostravicí|Moravskoslezský|9|trail|lysacup-frydlant-nad-ostravici|49.593|18.360|
+2027-01-09||Winter Run Hradec Králové|Hradec Králové|Královéhradecký|4/8/9|neuvedeno|winter-run-hradec-kralove|50.209|15.832|
+2027-01-09||Běh partyzánskou stezkou|Osek|Středočeský|3/9|trail|beh-partyzanskou-stezkou|50.621|13.693|
+2027-01-09||Piatlon|Praha – Újezd nad Lesy|Praha|6|neuvedeno|piatlon|50.087|14.421|
+2027-01-09||Kuřimský kros|Kuřim|Jihomoravský|5/9|trail|kurimsky-kros|49.299|16.531|
+2027-01-09||Lysacup – Ostravice, hřiště|Ostravice|Moravskoslezský|9|trail|lysacup-ostravice-hriste|49.535|18.392|
+2027-01-10||Přívratský přespolák|Přívrat|Pardubický||trail|privratsky-prespolak|49.914|16.388|
+2027-01-16||Winter Run Brno|Brno|Jihomoravský|4/8/9|neuvedeno|winter-run-brno|49.195|16.608|
+2027-01-16||Opět na Kozla|Velké Popovice|Středočeský|4/6/9/15|trail|opet-na-kozla|49.923|14.639|
+2027-01-16||RunTour Winter – České Budějovice|České Budějovice|Jihočeský|3/5/10/21.1|neuvedeno|runtour-winter-ceske-budejovice|48.975|14.474|
+2027-01-16||Radostická nerezová desítka|Radostice|Jihomoravský|5/11|neuvedeno|radosticka-nerezova-desitka|49.130|16.474|
+2027-01-16||Lysacup – Zlatník, sjezdovka|Zlatník|Moravskoslezský|5|trail|lysacup-zlatnik-sjezdovka-2027-01-16|49.568|18.470|
+2027-01-23||Poříčanské jelito|Poříčany|Středočeský|5/10|trail|poricanske-jelito|50.108|14.918|
+2027-01-23||Winter Run České Budějovice|České Budějovice|Jihočeský|4/8|neuvedeno|winter-run-ceske-budejovice|48.975|14.474|
+2027-01-23||Z Klínů do Klínů|Klíny|Ústecký|7.5/18|trail|z-klinu-do-klinu|50.636|13.546|
+2027-01-23|2027-01-24|VokoBer(g)|Bílina|Ústecký|50|trail|vokoberg|50.549|13.775|
+2027-01-23||Běh milénia|Chýnov|Jihočeský||neuvedeno|beh-milenia|49.407|14.811|
+2027-01-23||Lysacup – Ostravice, železniční přejezd|Ostravice|Moravskoslezský|19|trail|lysacup-ostravice-zeleznicni-prejezd|49.535|18.392|
+2027-01-24||Zimní běh Hlučín|Ludgeřovice|Moravskoslezský||neuvedeno|zimni-beh-hlucin|49.890|18.240|
+2027-01-30||Zimní krosový půlmaraton Bezděkov – Třemšín|Bezděkov pod Třemšínem|Středočeský|21.1|trail|zimni-krosovy-pulmaraton-bezdekov-tremsin-bezdekov|49.574|13.886|
+2027-02-06||Lipno Ice Marathon|Černá v Pošumaví|Jihočeský|10/22/42.2|neuvedeno|lipno-ice-marathon|48.738|14.110|
+2027-02-06||RunTour Winter – Praha|Praha|Praha|3/5/10/21.1|neuvedeno|runtour-winter-praha|50.087|14.421|
+2027-02-06||Gladiator Race Zoo Brno|Brno|Jihomoravský|4|OCR|gladiator-race-zoo-brno|49.195|16.608|
+2027-02-06|2027-02-07|Orlický maraton|Deštné v Orlických horách|Královéhradecký|10/20/40|trail|orlicky-maraton|50.303|16.351|
+2027-02-06||Rájecká desítka|Rájec-Jestřebí|Jihomoravský|5/10|neuvedeno|rajecka-desitka|49.411|16.639|
+2027-02-06||Lysacup – Ostravice, Mazák|Ostravice|Moravskoslezský|7|trail|lysacup-ostravice-mazak|49.535|18.392|
+2027-02-07||Zimní skály|Stará Oleška|Ústecký||trail|zimni-skaly|50.776|14.236|
+2027-02-13||Winter Run Olomouc|Olomouc|Olomoucký|4/8|neuvedeno|winter-run-olomouc|49.594|17.251|
+2027-02-13||Predator RUN Plzeň|Plzeň|Plzeňský|7|OCR|predator-run-plzen|49.747|13.378|
+2027-02-13||Běh na Posluchov|Olomouc – Svatý Kopeček|Olomoucký|5/10|neuvedeno|beh-na-posluchov|49.594|17.251|
+2027-02-13||Modřický pohár|Modřice|Jihomoravský|5/10|neuvedeno|modricky-pohar|49.119|16.604|
+2027-02-14||Valentýnský běh – Hradec Králové|Hradec Králové|Královéhradecký|5/10/21.1|neuvedeno|valentynsky-beh-hradec-kralove|50.209|15.832|
+2027-02-14||Lysacup – Malenovice, hotel Petr Bezruč|Malenovice|Moravskoslezský|6|trail|lysacup-malenovice-hotel-petr-bezruc-pres-hradovou|49.580|18.405|
+2027-02-20||Lesní maraton Choceň – Hradec|Choceň|Pardubický|12/15/30/42.2|trail|lesni-maraton-chocen-hradec|50.002|16.223|
+2027-02-20||Winter Run Praha|Praha – Břevnov|Praha|4/8|neuvedeno|winter-run-praha|50.087|14.421|
+2027-02-20||Lysacup – Frenštát, skokanské můstky – double časovka|Frenštát pod Radhoštěm|Moravskoslezský|6|trail|lysacup-frenstat-p-r-skokanske-mustky-double-casovka|49.548|18.211|
+2027-02-27||S čelovkou Dražovkou|Hořovice|Středočeský|3/6|trail|s-celovkou-drazovkou|49.836|13.903|
+2027-02-27||Rohálovská desítka|Prusinovice|Zlínský|10|neuvedeno|rohalovska-10|49.379|17.587|
+2027-02-27||Lysacup – Malenovice, Rajská bouda|Malenovice|Moravskoslezský|6|trail|lysacup-malenovice-rajska-bouda-2027-02-27|49.580|18.405|
+2027-03-06||Ludgeřovická 15|Ludgeřovice|Moravskoslezský|15|neuvedeno|ludgerovicka-15|49.890|18.240|
+2027-03-06||Velká cena VS Lechovice|Lechovice|Jihomoravský||neuvedeno|velka-cena-vs-lechovice|48.866|16.217|
+2027-03-06||Palestra Kbelská 10|Praha – Kbely|Praha|10|neuvedeno|palestra-kbelska-10|50.087|14.421|
+2027-03-06||Zimní běh krajem J. J. Ryby|Bezděkov pod Třemšínem|Středočeský|9|trail|zimni-beh-krajem-j-j-ryby|49.574|13.886|
+2027-03-06||Gladiator Race Olomouc|Olomouc|Olomoucký|4|OCR|gladiator-race-olomouc|49.594|17.251|
+2027-03-06||Vranovský žleb|Vranov|Jihomoravský|7/11|trail|vranovsky-zleb|49.313|16.609|
+2027-03-13||Pečecká desítka|Pečky|Středočeský|10|neuvedeno|pececka-desitka|50.090|15.030|
+2027-03-13||Quo Vadis – noční putování na Milešovku|Velemín|Ústecký|17/25|trail|quo-vadis-nocni-putovani-na-milesovku|50.539|13.977|
+2027-03-13||RunTour Zimní – Olomouc|Olomouc|Olomoucký|3/5/10/21.1|neuvedeno|runtour-zimni-olomouc|49.594|17.251|
+2027-03-13||Vranovská jarní půlka|Vranov|Jihomoravský|21.1|trail|vranovska-jarni-pulka|49.313|16.609|
+2027-03-13||Konopišťský půlmaraton|Benešov|Středočeský|21.1|neuvedeno|konopistsky-pulmaraton|49.782|14.687|
+2027-03-13||1000 Up|Babice nad Svitavou|Jihomoravský|10/27|trail|1000-up|49.283|16.697|
+2027-03-13||Kros okolo Otmíčské hory|Praskolesy|Středočeský|5|trail|kros-okolo-otmicske-hory|49.869|13.931|
+2027-03-13||Běh kolem Myslivny|Brno|Jihomoravský|6/11|trail|beh-kolem-myslivny|49.195|16.608|
+2027-03-14||Praha Expo Trail 10K|Praha|Praha|10|trail|praha-expo-trail-10k|50.087|14.421|
+2027-03-14||Český půlmaraton – Hradec Králové|Hradec Králové|Královéhradecký|3/21.1|neuvedeno|cesky-pulmaraton-hradec-kralove|50.209|15.832|
+2027-03-14||Maraton u Orlíku|Kovářov|Jihočeský|42.2|trail|maraton-u-orliku|49.518|14.278|
+2027-03-14||Kobeřická dvacítka|Kobeřice|Moravskoslezský|6/10/20|neuvedeno|kobericka-dvacitka|49.985|18.052|
+2027-03-19|2027-03-21|106 Vejvanovických|Hrochův Týnec|Pardubický|106|trail|106-vejvanovickych|49.959|15.911|
+2027-03-20||T2 běhy – České Budějovice|České Budějovice|Jihočeský|5/21.1/42.2/50|neuvedeno|t2-behy-ceske-budejovice|48.975|14.474|
+2027-03-20||Grand Prix Dříteč|Dříteč|Pardubický|4/8|neuvedeno|grand-prix-dritec|50.104|15.815|
+2027-03-20||Josefský běh v Cerhovicích|Cerhovice|Středočeský|3/4/7|trail|josefsky-beh-v-cerhovicich|49.849|13.835|
+2027-03-20||Prague Park Race – Průhonický park|Průhonice|Středočeský|8/14|trail|prague-park-race-pruhonicky-park|50.000|14.550|
+2027-03-20||Běh Lužánkami|Brno|Jihomoravský|3/6/8|neuvedeno|beh-luzankami|49.195|16.608|
+2027-03-21||Jevišovka Run|Novosedly|Jihomoravský||neuvedeno|jevisovka-run|48.837|16.493|
+2027-03-21||Vysokomýtský půlmaraton|Vysoké Mýto|Pardubický|21.1|neuvedeno|tvarmetal-vysokomytsky-pulmaraton|49.953|16.162|
+2027-03-21||Běh na Nový hrad|Adamov|Jihomoravský|4/8|trail|beh-na-novy-hrad|49.302|16.653|
+2027-03-28||Čendův běh|Petrov|Středočeský|12|trail|cenduv-beh|49.878|14.432|
+2027-03-28||Velikonoční běh Tovačov|Tovačov|Olomoucký|8|neuvedeno|velikonocni-beh-tovacov|49.431|17.288|
+2027-03-28||Běh Rožmitál – Březnice|Rožmitál pod Třemšínem|Středočeský|10|neuvedeno|beh-rozmital-breznice|49.602|13.864|
+2027-04-03||Běh kolem Holého vrchu|Jívoví|Vysočina|21.1|trail|beh-kolem-holeho-vrchu|49.393|16.124|
+2027-04-03||Český půlmaraton – Most|Most|Ústecký|3/21.1|neuvedeno|cesky-pulmaraton-most|50.503|13.636|
+2027-04-03|2027-04-04|Gladiator Race Kutná Hora|Kutná Hora|Středočeský|3/4/6|OCR|gladiator-race-kutna-hora|49.948|15.268|
+2027-04-03||Blanenský kros|Blansko|Jihomoravský|5/10|trail|blanensky-kros|49.363|16.644|
+2027-04-04||Lahofer Run|Dobšice|Jihomoravský||neuvedeno|lahofer-run|48.848|16.082|
+2027-04-04||Lipanská stezka|Kouřim|Středočeský|6/12|trail|lipanska-stezka|50.003|14.977|
+2027-04-10||Horský půlmaraton Sušice|Sušice|Plzeňský|6/12/21.1/31/49|trail|horsky-pulmaraton-susice|49.231|13.520|
+2027-04-10||Pardubický vinařský půlmaraton|Pardubice|Pardubický|10/21.1|neuvedeno|pardubicky-vinarsky-pulmaraton|50.034|15.781|
+2027-04-10||Run for ProCit|Plzeň|Plzeňský|5|neuvedeno|run-for-procit|49.747|13.378|
+2027-04-10|2027-04-11|Putování Kořeny|Plzeň|Plzeňský|176|trail|putovani-koreny|49.747|13.378|
+2027-04-10||Night Run Ostrava|Ostrava|Moravskoslezský|3/5/10|neuvedeno|night-run-ostrava|49.835|18.292|
+2027-04-10||RunTour – Hradec Králové|Hradec Králové|Královéhradecký|3/5/10|neuvedeno|runtour-hradec-kralove|50.209|15.832|
+2027-04-10||Šaratický běh|Šaratice|Jihomoravský|5/10|neuvedeno|saraticky-beh|49.098|16.866|
+2027-04-11||Běh kolem Hluboké|Hluboká nad Vltavou|Jihočeský|25|neuvedeno|beh-kolem-hluboke|49.052|14.434|
+2027-04-11||Kaňonem Sázavy|Sázava|Středočeský|5/10/15|trail|kanonem-sazavy|49.872|14.897|
+2027-04-11||KozlY Run Oleksovice|Oleksovice|Jihomoravský||neuvedeno|kozly-run-oleksovice|48.903|16.258|
+2027-04-16|2027-04-18|Excalibur Race – Pohořelice|Pohořelice|Jihomoravský||OCR|excalibur-race-pohorelice|48.981|16.524|
+2027-04-17||Děčín RunFest|Děčín|Ústecký|5/21.1|neuvedeno|decin-runfest|50.773|14.196|
+2027-04-17||Plzeňský čtvrtmaraton|Štěnovice|Plzeňský|5/11|neuvedeno|plzensky-ctvrtmaraton|49.671|13.400|
+2027-04-17|2027-04-18|Hlučínská 24ka|Hlučín|Moravskoslezský|6|trail|hlucinska-24ka|49.898|18.192|b
+2027-04-17||Vokolo Trail|Brno|Jihomoravský|18|trail|vokolo-trail|49.195|16.608|
+2027-04-17||UHM Dokola Kletě|Třísov|Jihočeský||trail|uhm-dokola-klete|48.876|14.355|
+2027-04-17||Jarní běh Dražovkou|Hořovice|Středočeský|4/7|trail|jarni-beh-drazovkou|49.836|13.903|
+2027-04-17||Night Run Hradec Králové|Hradec Králové|Královéhradecký|3/5/10|neuvedeno|night-run-hradec-kralove|50.209|15.832|
+2027-04-17||Dolanský krpál|Dolany|Olomoucký|4/9|trail|dolansky-krpal|49.650|17.322|
+2027-04-18||Charitativní běh NF Křídla dětem|Ostrava|Moravskoslezský|5/10|neuvedeno|charitativni-beh-nf-kridla-detem|49.835|18.292|
+2027-04-18||Bolatická 20|Bolatice|Moravskoslezský|3/10/20|trail|bolaticka-20|49.952|18.084|
+2027-04-18||Žatecký půlmaraton|Žatec|Ústecký|10/21.1|neuvedeno|zatecky-pulmaraton|50.327|13.546|
+2027-04-18||Brněnský půlmaraton|Brno|Jihomoravský|5/10/21.1|neuvedeno|brnensky-pulmaraton|49.195|16.608|
+2027-04-24||Prčický půlmaraton|Sedlec-Prčice|Středočeský|5/10/21.1|neuvedeno|prcicky-pulmaraton|49.573|14.533|
+2027-04-24||Pohoda Run Únanov|Únanov|Jihomoravský||trail|pohoda-run-unanov|48.901|16.064|
+2027-04-24|2027-04-25|Pyšelský kopeček|Pyšely|Středočeský|7/12/52/105|trail|pyselsky-kopecek|49.877|14.677|
+2027-04-24||Polanský charitativní běh|Ostrava|Moravskoslezský|10|neuvedeno|polansky-charitativni-beh|49.835|18.292|
+2027-04-24||Pasekačka.run|Paseka|Olomoucký||trail|pasekackarun|49.796|17.223|
+2027-04-24||Alis run – Bystřický běh s úsměvem|Bystřice|Moravskoslezský|5/11|trail|alis-run-bystricky-beh-s-usmevem|49.637|18.721|
+2027-04-24||Běh veltruským parkem|Veltrusy|Středočeský||trail|beh-veltruskym-parkem|50.270|14.329|
+2027-04-24||Běh na Veselý vrch|Prostřední Lhota|Středočeský||trail|beh-na-vesely-vrch|49.623|14.358|
+2027-04-24||RunTour – České Budějovice|České Budějovice|Jihočeský|3/5/10/21.1|neuvedeno|runtour-ceske-budejovice|48.975|14.474|
+2027-04-25||Štěpánkovický kros|Štěpánkovice|Moravskoslezský||trail|stepankovicky-kros|49.957|18.037|
+2027-04-25||Nymburský půlmaraton|Nymburk|Středočeský|10/21.1|neuvedeno|nymbursky-pulmaraton|50.186|15.042|
+2027-04-25||Brdské rokle|Řevnice|Středočeský|6/12/16|trail|kros-sazava|49.914|14.236|
+2027-04-25||Rokycanský krpály|Rokycany|Plzeňský||trail||49.743|13.595|
+2027-04-30||Gladiator Race Milovice|Milovice|Středočeský||OCR|gladiator-race-milovice|50.226|14.889|
+2027-05-01||Hornobludovická sedmička|Horní Bludovice|Moravskoslezský|7|trail|hornobludovicka-sedmicka|49.750|18.437|
+2027-05-01||Lukovský běh|Lukov|Jihomoravský||neuvedeno|lukovsky-beh|49.290|17.730|
+2027-05-01|2027-05-02|K6 – czech ultramarathon festival|Konstantinovy Lázně|Plzeňský||trail|k6-czech-ultramarathon-festival|49.879|12.977|b
+2027-05-07|2027-05-09|Krušava|Lipno nad Vltavou|Jihočeský|166|trail|krusava|48.640|14.222|
+2027-05-07|2027-05-08|Strážnická stovka Honzy Rose|Strážnice|Jihomoravský|100|trail|straznicka-stovka-honzy-rose|48.901|17.317|
+2027-05-08|2027-05-11|Czechia Backyard Ultra Run|Holešov|Zlínský|6.7|trail|czechia-backyard-ultra-run|49.333|17.578|b
+2027-05-08||Desítka z Jasének|Hlučín|Moravskoslezský|10|trail|desitka-z-jasenek|49.898|18.192|
+2027-05-08||Sokolské putování Českým středohořím|Děčín|Ústecký|11/17/36/50|trail|sokolska-padesatka|50.773|14.196|
+2027-05-08||Kaolin Dog Race Spring|Chlum Svaté Maří|Karlovarský|3/5|OCR|kaolin-dog-race-spring|50.149|12.536|
+2027-05-08|2027-05-09|Vltava Run Tam a zpátky|Praha – Braník|Praha|243|trail|vltava-run-tam-a-zpatky|50.087|14.421|
+2027-05-08||Dětřichovský memoriál|Moravská Třebová|Pardubický|8|neuvedeno|detrichovsky-memorial|49.758|16.664|
+2027-05-09||Wings for Life – Český Těšín|Český Těšín|Moravskoslezský||neuvedeno|wings-for-life-cieszyn-czeski-cieszyn|49.746|18.626|
+2027-05-09||Wings for Life – Praha|Praha|Praha||neuvedeno|wings-for-life-prague|50.087|14.421|
+2027-05-09||Wings for Life – Břeclav|Břeclav|Jihomoravský||neuvedeno|wings-for-life-breclav|48.759|16.882|
+2027-05-09||Wings for Life – Jablonec nad Nisou|Jablonec nad Nisou|Liberecký||neuvedeno|wings-for-life-jablonec-nad-nisou-liberec|50.724|15.171|
+2027-05-09||Vltava Run Čtyřka|Měřín|Středočeský|48|trail|vltava-run-ctyrka|49.393|15.884|
+2027-05-15||Hradubický běh a Hradubický půlmaraton|Hradec Králové|Královéhradecký|10/21.1|neuvedeno|hradubicky-beh-a-hradubicky-pulmaraton|50.209|15.832|
+2027-05-15||Závadská desítka RUN|Bohuslavice|Moravskoslezský|10|neuvedeno|zavadska-desitka-run|49.942|18.129|
+2027-05-15||Běh Dobroučským krajem|Dolní Dobrouč|Pardubický|3|trail|beh-dobroucskym-krajem|49.993|16.498|
+2027-05-15||Příbramský půlmaraton|Příbram|Středočeský|21.1|neuvedeno|pribramsky-12-maraton|49.690|14.010|
+2027-05-15||7 Pohoří – Orlické hory (Závod Orlické hory)|Deštné v Orlických horách|Královéhradecký|5/13/24|trail|zavod-orlicke-hory|50.303|16.351|
+2027-05-15||Night Run Brno|Brno|Jihomoravský|3/5/10|neuvedeno|night-run-brno|49.195|16.608|
+2027-05-15||Zkus půlmaraton Kuks|Kuks|Královéhradecký|5/10/21.1|trail|zkus-pulmaraton-kuks|50.402|15.888|
+2027-05-22||Běh pro Hospic v Litoměřicích|Litoměřice|Ústecký||neuvedeno|beh-pro-hospic-v-litomericich|50.533|14.132|
+2027-05-22||Jistebnický VH půlmaraton|Jistebník|Moravskoslezský|4/11/21.1/42.2|neuvedeno|jistebnicky-vh-pulmaraton|49.754|18.131|
+2027-05-22||Sudický hraničák|Sudice|Moravskoslezský||neuvedeno|sudicky-hranicak|50.030|17.976|
+2027-05-22||Charitativní běh na Špince|Úpice|Královéhradecký|5/10|neuvedeno|charitativni-beh-na-spince|50.512|16.016|
+2027-05-22||Zaječický bůr|Zaječice|Středočeský|6/11|trail|zajecicky-bur|49.965|15.103|
+2027-05-22||Gočárův běh|Hradec Králové|Královéhradecký|32|neuvedeno|gocaruv-beh|50.209|15.832|
+2027-05-22||LHUT|Malenovice|Moravskoslezský|67|trail|lhut|49.580|18.405|
+2027-05-22||Májový běh Slapy|Slapy|Středočeský|3/8|trail|majovy-beh-slapy|49.812|14.394|
+2027-05-22||Night Run Liberec|Liberec|Liberecký|3/5/10|neuvedeno|night-run-liberec|50.767|15.056|
+2027-05-22||Predator Race Monínec|Sedlec-Prčice|Středočeský|5/10|OCR|predator-race-moninec|49.573|14.533|
+2027-05-22||RunTour – Brno|Brno|Jihomoravský|3/5/10|neuvedeno|runtour-brno|49.195|16.608|
+2027-05-23||Lesní půlmaraton Říčany|Říčany|Středočeský|5/11/21.1|trail|lesni-pulmaraton-ricany|49.992|14.654|
+2027-05-29|2027-05-30|Run Labe Run|Špindlerův Mlýn|Královéhradecký|380|trail|run-labe-run|50.726|15.609|
+2027-05-29||Extrem Run 5 Hills|Vojtanov|Karlovarský|91|trail|extrem-run-5-hills|50.164|12.317|
+2027-05-29||Tuháčkův běh|Chrást|Středočeský|8|trail|tuhackuv-beh|49.902|15.934|
+2027-05-29||Gladiator Race Ostrava|Ostrava|Moravskoslezský|4/7|OCR|gladiator-race-ostrava|49.835|18.292|
+2027-05-30||Festivalový půlmaraton MONET+ Zlín|Zlín|Zlínský|5/11/21.1|neuvedeno|festivalovy-pulmaraton-monet-zlin|49.226|17.667|
+2027-05-30||Zahořanská 10|Zahořany|Středočeský|5/10|trail|zahoranska-10|49.889|14.411|
+2027-05-30||Babický Trail 1/4 Maraton|Babice|Středočeský|6/10|trail|babicky-trail-14-maraton|49.990|14.710|
+2027-06-04||Dopesace Backyard Ultra|Aš|Karlovarský|6.7|trail|dopesace-backyard-ultra|50.224|12.195|b
+2027-06-05||Trutnovská 10|Trutnov|Královéhradecký|5/10|neuvedeno|trutnovska-10|50.561|15.913|
+2027-06-05||Vybarvený běh Kroměříž|Hulín|Zlínský|5|neuvedeno|vybarveny-beh-kromeriz|49.317|17.464|
+2027-06-05||Kilpi Heroes Race|Hradec nad Moravicí|Moravskoslezský|5/10|OCR|kilpi-heroes-race|49.870|17.878|
+2027-06-05||NN Prague Run|Praha|Praha|21.1|neuvedeno|nn-prague-run|50.087|14.421|
+2027-06-06||Mnichovická Běhna|Mnichovice|Středočeský|8|trail|mnichovicka-behna|49.936|14.709|
+2027-06-06||Skalecký kros|Mníšek pod Brdy|Středočeský|3/5/10|trail|skalecky-kros|49.867|14.262|
+2027-06-11|2027-06-13|Excalibur Race – Kuřim|Kuřim|Jihomoravský||OCR|excalibur-race-kurim|49.299|16.531|
+2027-06-12||Rychlebská 50|Javorník|Olomoucký|7/20/40/50|trail|rychlebska-50|50.391|17.003|
+2027-06-12||7 Pohoří – Jeseníky (Závod Jeseníky)|Dolní Morava|Pardubický|7/11/24|trail|zavod-jeseniky|50.122|16.799|
+2027-06-12||Jinecký kros|Jince|Středočeský|6|trail|jinecky-kros|49.786|13.979|
+2027-06-13||Přespolní běh areálem zdraví Chábory|Dobruška|Královéhradecký|3/10|trail|prespolniho-behu-arealem-zdravi-chabory|50.292|16.160|
+2027-06-13||Konopišťská desítka|Benešov|Středočeský|10|neuvedeno|konopistska-desitka|49.782|14.687|
+2027-06-13||Sady v běhu|Brno|Jihomoravský|6|neuvedeno|sady-v-behu|49.195|16.608|
+2027-06-13||Chaloupecký kros|Chaloupky|Středočeský|4/8|trail|chaloupecky-kros|49.860|13.968|
+2027-06-17||Běh pro Jedličku|Praha|Praha|3/5|neuvedeno|beh-pro-jedlicku|50.087|14.421|
+2027-06-18||Beer Run – Jablonec nad Nisou|Jablonec nad Nisou|Liberecký|3|neuvedeno|beer-run-jablonec-nad-nisou|50.724|15.171|
+2027-06-18|2027-06-19|Krakonošova stovka|Vrchlabí|Královéhradecký|25/100|trail|krakonosova-stovka|50.627|15.609|
+2027-06-19||Jirkovský crossmarathon a půlmarathon|Jirkov|Ústecký|21.1/42.2|trail|jirkovsky-crossmarathon-a-pulmarathon|50.500|13.448|
+2027-06-19||Běh okolo Vraní skály|Černín|Středočeský|9|neuvedeno|beh-okolo-vrani-skaly|49.881|14.051|
+2027-06-19||Prague Park Race – Divoká Šárka|Praha|Praha|8/14|trail|prague-park-race-divoka-sarka|50.087|14.421|
+2027-06-19|2027-06-20|Gladiator Race Pevnost Terezín|Terezín|Ústecký|3/6|OCR|gladiator-race-pevnost-terezin|50.511|14.151|
+2027-06-20||Sunrise Marathon|Modřice|Jihomoravský|21.1/42.2|neuvedeno|sunrise-marathon|49.119|16.604|
+2027-06-20||RunTour – Plzeň|Plzeň|Plzeňský|3/5/10/21.1|neuvedeno|runtour-plzen|49.747|13.378|
+2027-06-23||Olympijský běh – Neratovice|Neratovice|Středočeský|6|trail|olympijsky-beh-neratovice|50.259|14.518|
+2027-06-23||Olympijský běh – Čelákovice|Čelákovice|Středočeský|5/10|neuvedeno|olympijsky-beh-celakovice|50.160|14.750|
+2027-06-23||Olympijský běh – Lovosice|Lovosice|Ústecký|5/8|neuvedeno|olympijsky-beh-lovosice|50.515|14.051|
+2027-06-23||Olympijský běh – Valašské Klobouky|Valašské Klobouky|Zlínský|5/10|neuvedeno|olympijsky-beh-valasske-klobouky|49.141|18.008|
+2027-06-23||Olympijský běh – Žatec|Žatec|Ústecký|3/6|neuvedeno|olympijsky-beh-zatec|50.327|13.546|
+2027-06-23||Olympijský běh – Děčín|Děčín|Ústecký|5|neuvedeno|olympijsky-beh-decin|50.773|14.196|
+2027-06-23||Olympijský běh – Chotiměř|Chotiměř|Ústecký|6|neuvedeno|olympijsky-beh-chotimer|50.553|14.002|
+2027-06-23||Olympijský běh – Mělník|Mělník|Středočeský|5/10|neuvedeno|olympijsky-beh-melnik|50.350|14.474|
+2027-06-23||Olympijský běh – Bystřice pod Hostýnem|Bystřice pod Hostýnem|Zlínský|5|neuvedeno|olympijsky-beh-bystrice-pod-hostynem|49.399|17.674|
+2027-06-23||Olympijský běh – Holešov|Holešov|Zlínský|5|trail|olympijsky-beh-holesov|49.333|17.578|
+2027-06-23||Olympijský běh – České Budějovice|České Budějovice|Jihočeský|7|trail|olympijsky-beh-ceske-budejovice|48.975|14.474|
+2027-06-23||Olympijský běh – Holetín|Holetín|Pardubický|4/8|trail|olympijsky-beh-holetin|49.796|16.024|
+2027-06-23||Olympijský běh – Kunice|Kunice|Středočeský|5/10|neuvedeno|olympijsky-beh-kunice|49.927|14.675|
+2027-06-23||Olympijský běh – Horoměřice|Horoměřice|Středočeský|7|trail|olympijsky-beh-horomerice|50.132|14.339|
+2027-06-23||Olympijský běh – Ostrov|Ostrov|Karlovarský|5|neuvedeno|olympijsky-beh-ostrov|50.306|12.939|
+2027-06-23||Olympijský běh – Liberec|Liberec|Liberecký|3/6|neuvedeno|olympijsky-beh-liberec|50.767|15.056|
+2027-06-23||Olympijský běh – Krnov|Krnov|Moravskoslezský|6|neuvedeno|olympijsky-beh-krnov|50.090|17.704|
+2027-06-23||Olympijský běh – Pelhřimov|Pelhřimov|Vysočina|5/7|neuvedeno|olympijsky-beh-pelhrimov|49.431|15.223|
+2027-06-23||Olympijský běh – Louny|Dobroměřice|Ústecký|4|neuvedeno|olympijsky-beh-louny|50.370|13.795|
+2027-06-23||Olympijský běh – Praha, Ladronka|Praha – Břevnov|Praha|5/10|neuvedeno|olympijsky-beh-praha-ladronka|50.087|14.421|
+2027-06-23||Olympijský běh – Kolín|Kolín|Středočeský|3|neuvedeno|olympijsky-beh-kolin|50.028|15.200|
+2027-06-23||Olympijský běh – Stříbro|Stříbro|Plzeňský|5|neuvedeno|olympijsky-beh|49.756|12.997|
+2027-06-23||Olympijský běh – Rožnov pod Radhoštěm|Rožnov pod Radhoštěm|Zlínský|5|neuvedeno|olympijsky-bh-roznov-pod-radhostem|49.459|18.143|
+2027-06-23||Olympijský běh – Trutnov|Trutnov|Královéhradecký|5|neuvedeno|olympijsky-beh-trutnov|50.561|15.913|
+2027-06-23||Olympijský běh – Náměšť na Hané|Náměšť na Hané|Olomoucký|5|neuvedeno|olympijsky-beh-olomouc-namest-na-hane|49.603|17.063|
+2027-06-23||Olympijský běh – Praha, Královka|Praha – Břevnov|Praha|3.8|neuvedeno|olympijsky-beh-praha-kralovka|50.087|14.421|
+2027-06-23||Olympijský běh – Praha, Satalice|Praha – Satalice|Praha|5|trail|olympijsky-bh-praha-satalice|50.087|14.421|
+2027-06-23||Olympijský běh – Roudnice nad Labem|Podlusky|Ústecký|5/10|neuvedeno|olympijsky-beh-roudnice-nad-labem|50.417|14.237|
+2027-06-23||Olympijský běh – Ústí nad Labem|Ústí nad Labem – jezero Milada|Ústecký|5/10|neuvedeno|olympijsky-beh-usti-nad-labem|50.661|14.032|
+2027-06-23||Olympijský běh – Červené Pečky|Červené Pečky|Středočeský|5|trail|olympijsky-beh-cervene-pecky|49.978|15.209|
+2027-06-23||Olympijský běh – Hudčice|Hudčice|Středočeský|3|neuvedeno|olympijsky-beh-hudcice|49.528|13.931|
+2027-06-23||Olympijský běh – Praha, Petřín|Praha – Petřín|Praha|6|neuvedeno|olympijsky-beh-praha-petrin|50.087|14.421|
+2027-06-23||Olympijský běh – Praha, Letná|Praha – Letná|Praha|5/10|neuvedeno|olympijsky-beh-praha-letna|50.087|14.421|
+2027-06-23||Olympijský běh – Brno|Brno|Jihomoravský|5/10|neuvedeno|olympijsky-beh-brno|49.195|16.608|
+2027-06-23||Olympijský běh – Ivančice|Ivančice|Jihomoravský|3/5|trail|olympijsky-beh-ivancice|49.101|16.378|
+2027-06-23||Olympijský běh – Sušice|Sušice|Plzeňský|5|neuvedeno|olympijsky-beh-susice|49.231|13.520|
+2027-06-23||Olympijský běh – Lelekovice|Lelekovice|Jihomoravský|5|neuvedeno|olympijsky-beh-lelekovice|49.291|16.579|
+2027-06-23||Olympijský běh – Šternberk|Šternberk|Olomoucký|3|neuvedeno|olympijsky-beh-sternberk|49.730|17.299|
+2027-06-23||Olympijský běh – Kralice nad Oslavou|Kralice nad Oslavou|Vysočina||neuvedeno|olympijsky-beh-kralice-nad-oslavou|49.200|16.204|
+2027-06-26||Záblatská osmička|Záblatí|Moravskoslezský|8|neuvedeno|zablatska-osmicka|49.900|18.355|
+2027-06-27||Lochovice – Plešivec|Lochovice|Středočeský|3/6|trail|lochovice-plesivec|49.853|13.981|
+2027-06-27||Šnek Race|Chřibská|Ústecký||OCR|snek-race|50.861|14.484|
+2027-07-10||Králický Sněžník beze stopy|Heřmanice|Pardubický|5/14|trail|kralicky-sneznik-beze-stopy|50.096|16.762|
+2027-07-11||Běh letním ránem|Štítná nad Vláří-Popov|Zlínský|15|neuvedeno|beh-letnim-ranem|49.083|17.979|
+2027-07-16|2027-07-18|Sedmihoří|Sedmihoří|Plzeňský||trail|sedmihori|49.519|12.715|
+2027-07-17||7 Pohoří – Krušné hory (Závod Krušné hory)|Abertamy|Karlovarský|8/13/22|trail|zavod-krusne-hory|50.369|12.818|
+2027-07-17||Moravskosázavská 50K|Zábřeh|Olomoucký|50|trail|moravsky-sazava-run|49.883|16.872|
+2027-07-17||RunTour – Olomouc|Olomouc|Olomoucký|3/5/10/21.1|neuvedeno|runtour-olomouc|49.594|17.251|
+2027-07-17||Zkus noční Kuks|Kuks|Královéhradecký|5/10|trail|zkus-nocni-kuks|50.402|15.888|
+2027-07-22||Běh za Sliveneckou saní|Praha – Slivenec|Praha||neuvedeno||50.087|14.421|
+2027-07-23|2027-07-25|Týnišťské šlápoty|Týniště nad Orlicí|Královéhradecký|25/50/70/130|trail|tynistske-slapoty|50.151|16.078|
+2027-07-24||PeakBlanc Challenge|Janské Lázně|Královéhradecký|5|trail|peakblanc-challenge|50.631|15.780|
+2027-08-07||Dačického 12|Kutná Hora|Středočeský|7/12|neuvedeno|dacickeho-12|49.948|15.268|
+2027-08-07||Gladiator Race Pardubice|Pardubice|Pardubický||OCR|gladiator-race-pardubice|50.034|15.781|
+2027-08-07||Krkonošská 50 Trail|Špindlerův Mlýn|Královéhradecký|50|trail|krkonosska-50-trail|50.726|15.609|
+2027-08-07||Dolnohbitský tvrďák|Dolní Hbity|Středočeský||trail||49.656|14.170|
+2027-08-13|2027-08-15|Morava Run|Břeclav|Jihomoravský|286|trail|morava-run|48.759|16.882|
+2027-08-14||7 Pohoří – Šumava (Závod Šumava)|Železná Ruda|Plzeňský||trail|zavod-sumava|49.137|13.235|
+2027-08-14||Kaolin Dog Race Summer|Chlum Svaté Maří|Karlovarský|3/5|OCR|kaolin-dog-race-summer|50.149|12.536|
+2027-08-15||Žebrácká 25|Žebrák|Středočeský|25|neuvedeno|zebracka-25|49.876|13.897|
+2027-08-18||Večerní EPP Energy Run podél Čertových proudů|Lipno nad Vltavou|Jihočeský|10|neuvedeno|vecerni-epp-energy-run-podel-certovych-proudu|48.640|14.222|
+2027-08-21||Michalův běh|Miletín|Královéhradecký||neuvedeno|michaluv-beh|50.405|15.680|
+2027-08-21||Panevropský půlmaraton|Poběžovice|Plzeňský|21.1|neuvedeno|panevropsky-pulmaraton|49.510|12.803|
+2027-08-21||Lipenský půlmaraton|Lipno nad Vltavou|Jihočeský|3/10/21.1|trail|bezecky-zavod-ct-lipensky-pulmaraton|48.640|14.222|
+2027-08-21||Valdštejnova desítka|Cheb|Karlovarský|5/10|neuvedeno|valdstejnova-desitka|50.080|12.374|
+2027-08-22||Hostivařské dvojice|Praha – Hostivař|Praha|10|neuvedeno|hostivarske-dvojice|50.087|14.421|
+2027-08-27|2027-08-29|Beskydská sedmička|Třinec|Moravskoslezský|101|trail|beskydska-sedmicka|49.678|18.671|
+2027-08-27|2027-08-29|Excalibur Race Dolní Kounice|Dolní Kounice|Jihomoravský||OCR|excalibur-race-dolni-kounice|49.070|16.465|
+2027-08-28||Cross Parkmaraton Krásná Lípa|Krásná Lípa|Ústecký|5/10/21.1/42.2|trail|cross-parkmaraton-krasna-lipa|50.913|14.510|
+2027-08-28||Neon Run Praha Bohnice|Praha – Bohnice|Praha|5|neuvedeno|neon-run-praha-bohnice|50.087|14.421|
+2027-08-29||Běh Bezděkovem|Bezděkov pod Třemšínem|Středočeský|9|trail|beh-bezdekovem|49.574|13.886|
+2027-09-03||Běh naděje Otrokovice|Otrokovice|Zlínský|3|neuvedeno|beh-nadeje-otrokovice|49.217|17.517|
+2027-09-04||Mirovice – Běh do Háje|Mirovice|Jihočeský|3/6|trail|mirovice-beh-do-haje|49.516|14.036|
+2027-09-05||Běh s klokanem|Olomouc|Olomoucký|7/9|neuvedeno|beh-s-klokanem|49.594|17.251|
+2027-09-05||Jihlavský půlmaraton|Jihlava|Vysočina|10/21.1|neuvedeno|jihlavsky-pulmaraton|49.396|15.591|
+2027-09-05||Ostrava City Marathon|Ostrava|Moravskoslezský|4/10/42.2|neuvedeno|ostrava-city-marathon|49.835|18.292|
+2027-09-08||S kopečka do kopečka|Olomouc – Svatý Kopeček|Olomoucký|4/7|trail|s-kopecka-do-kopecka|49.594|17.251|
+2027-09-11||Běh Kovohutěmi|Lhota u Příbramě|Středočeský|12|neuvedeno|beh-kovohutemi|49.714|13.983|
+2027-09-11||Kaolin Dog Race Autumn|Chlum Svaté Maří|Karlovarský|3/5|OCR|kaolin-dog-race-autumn|50.149|12.536|
+2027-09-11||Přeloučská desítka|Přelouč|Pardubický|5/10|neuvedeno|preloucska-desitka|50.040|15.560|
+2027-09-11||Night Run Praha|Praha|Praha|3/5/10|neuvedeno|night-run-praha|50.087|14.421|
+2027-09-11||Dětmarovická 10|Dětmarovice|Moravskoslezský|10|neuvedeno|detmarovicka-10|49.894|18.461|
+2027-09-11||RunTour – Ostrava|Ostrava|Moravskoslezský|3/5/10/21.1|neuvedeno|runtour-ostrava|49.835|18.292|
+2027-09-18||Soběchlebský Š-krpál|Soběchleby|Olomoucký|6/12|trail|sobechlebsky-s-krpal|49.462|17.643|
+2027-09-18||Li.t.r. Lipno trail run|Lipno nad Vltavou|Jihočeský||trail|litr-lipnotrailrun|48.640|14.222|
+2027-09-18||Hořovický cvoček|Hořovice|Středočeský|12|trail|horovicky-cvocek|49.836|13.903|
+2027-09-18|2027-09-19|Gladiator Race Český ráj|Branžež|Středočeský||OCR|gladiator-race-cesky-raj|50.505|15.032|
+2027-09-18||Český půlmaraton Plzeň|Plzeň|Plzeňský|21.1|neuvedeno|skoda-fit-pulmaraton|49.747|13.378|
+2027-09-24|2027-09-25|Urban Challenge – Ostrava|Ostrava|Moravskoslezský|5/10|OCR|urban-challenge-ostrava|49.835|18.292|
+2027-09-25||ŠumpeRUN|Šumperk|Olomoucký|3/10|neuvedeno|sumperun|49.965|16.971|
+2027-09-25||7 Pohoří – Beskydy (Závod Beskydy)|Trojanovice|Moravskoslezský|5/13/23|trail|zavod-beskydy|49.520|18.238|
+2027-09-25||Běh Bohutínem|Bohutín|Středočeský|5/10|trail|beh-bohutinem|49.656|13.944|
+2027-09-25||Prague Park Race – Konopiště|Benešov|Středočeský|8/14|trail|prague-park-race-konopiste|49.782|14.687|
+2027-09-26||Běchovice – Praha|Praha – Běchovice|Praha|10|neuvedeno|ceska-sporitelna-bechovice-praha|50.087|14.421|
+2027-09-26||Saar Challenge|Hlinsko|Pardubický|7/22/44/70|trail|saar-challenge|49.762|15.908|
+2027-09-28||Svatováclavský běh – Český Brod|Český Brod|Středočeský|3|neuvedeno|svatovaclavsky-beh-cesky-brod|50.074|14.861|
+2027-09-28||Půlmaraton Moravským krasem|Blansko|Jihomoravský|21.1|neuvedeno|pulmaraton-moravskym-krasem|49.363|16.644|
+2027-10-01|2027-10-03|Run Berounka Run|Újezd u Svatého Kříže|Plzeňský|130|trail|run-berounka-run|49.979|13.592|
+2027-10-02||Běh města Příbrami|Příbram|Středočeský|10|neuvedeno|beh-mesta-pribrami|49.690|14.010|
+2027-10-02|2027-10-03|Skyrun – Dlouhé Stráně|Loučná nad Desnou|Olomoucký|22|trail|skyrun-dlouhe-strane|50.074|17.091|
+2027-10-02|2027-10-03|24DS|Loučná nad Desnou|Olomoucký|20/50/100/160|trail|24ds|50.074|17.091|
+2027-10-02||Běh Pístovickou riviérou|Pístovice|Jihomoravský|4/6/8|trail|beh-pistovickou-rivierou|49.296|16.833|
+2027-10-02||Kros přes sv. Bartoloměj|Běšiny|Plzeňský|6/13|trail|kros-pres-sv-bartolomej|49.296|13.321|
+2027-10-02||Zlatohorský treking|Zlaté Hory|Olomoucký|5/15/25/50|trail|zlatohorsky-treking|50.264|17.396|
+2027-10-02||Český půlmaraton – Brno|Brno|Jihomoravský|21.1|neuvedeno|cesky-pulmaraton-brno|49.195|16.608|
+2027-10-02||RunTour – Praha|Praha|Praha|3/5/10|neuvedeno|runtour-praha|50.087|14.421|
+2027-10-02||Běh za bořetickým burčákem|Bořetice|Jihomoravský||neuvedeno|beh-za-boretickym-burcakem|48.913|16.853|
+2027-10-02||Staroměstský zvonkáč|Staré Město|Pardubický|4/10|trail|staromestsky-zvonkac|49.797|16.677|
+2027-10-03||Hradecký půlmaraton|Hradec Králové|Královéhradecký|5/10/21.1|neuvedeno|hradecky-pulmaraton|50.209|15.832|
+2027-10-08|2027-10-09|Urban Challenge – ARMY Přáslavice|Přáslavice|Olomoucký|5/10|OCR|urban-challenge-army-praslavice|49.586|17.382|
+2027-10-09||Ladermon Trail|Radíkov|Olomoucký|15/30|trail|ladermon-trail|49.637|17.348|
+2027-10-09||Běh Bukovem|Plískov|Plzeňský|4/8|trail|beh-bukovem|49.836|13.700|
+2027-10-09||Vokolo priglu|Brno|Jihomoravský|14|neuvedeno|vokolo-priglu|49.195|16.608|
+2027-10-15|2027-10-17|Gladiator Race Praha|Praha – Černý Most|Praha||OCR|gladiator-race-praha|50.087|14.421|
+2027-10-16||Malá Křivoklátská|Křivoklát|Středočeský|3/4/6|trail|mala-krivoklatska|50.038|13.872|
+2027-10-16|2027-10-17|Jesenický Surovec|Žihle|Plzeňský|6/12/25/50|trail|jesenicky-surovec|50.045|13.375|
+2027-10-16||Night Run České Budějovice|České Budějovice|Jihočeský|3/5/10|neuvedeno|night-run-ceske-budejovice|48.975|14.474|
+2027-10-16||Hranický horský běh|Hranice|Olomoucký||trail|horsky-beh-hranice-memorial-petra-kroci|49.548|17.735|
+2027-10-16||RunTour – Pardubice|Pardubice|Pardubický|3/5/10/21.1|neuvedeno|runtour-pardubice|50.034|15.781|
+2027-10-16||Běh kolem Ameriky – Písek|Písek|Jihočeský|10|neuvedeno|beh-kolem-ameriky-pisek|49.309|14.148|
+2027-10-17||Brněnská 25|Modřice|Jihomoravský|8/16/25|neuvedeno|brnenska-25|49.119|16.604|
+2027-10-17||Klánovický půlmaraton|Praha – Klánovice|Praha|5/10/21.1|neuvedeno|klanovicky-pulmaraton|50.087|14.421|
+2027-10-23||Podzimní běh Dražovkou|Hořovice|Středočeský|4/7|trail|podzimni-beh-drazovkou|49.836|13.903|
+2027-10-23||Prague Park Race|Praha – Prokopské údolí|Praha|9/14|trail|prague-park-race|50.087|14.421|
+2027-10-23||Night Run Olomouc|Olomouc|Olomoucký|3/5/10|neuvedeno|night-run-olomouc|49.594|17.251|
+2027-10-23||Slapy Trail Maniacs|Nečín|Středočeský|33/47/61|trail|slapy-trail-maniacs|49.700|14.270|
+2027-10-24||Běh pro hospic – Milovice|Milovice|Středočeský|3/11/21.1/42.2|trail|beh-pro-hospic-milovice|50.226|14.889|
+2027-10-28||Králodvorský čtverec|Králův Dvůr|Středočeský||neuvedeno|kralodvorsky-ctverec|49.950|14.034|
+2027-10-29||Gladiator Race Halloween|Josefov|Královéhradecký||OCR|gladiator-race-halloween|50.340|15.928|`;
+RL.split('\n').forEach(function(line,i){
+  var f=line.split('|');var slug=f[7];var ex=RL_EXTRA[slug]||{};
+  var dists=f[5]?f[5].split('/').map(function(x){return parseFloat(x);}):[];
+  var flags=f[10]==='b'?['backyard ultra']:[];
+  RACES.push(R({id:'rl-'+(slug||('x'+i)),name:f[2],from:f[0],to:f[1]||null,place:f[3],region:f[4],lat:parseFloat(f[8]),lon:parseFloat(f[9]),surface:f[6],tracks:dists.map(function(d){return [d,null];}),flags:flags,status:'agregator',plat:['rl'],links:{reg:ex.reg||null,start:null,res:ex.res||null},src:[['running.life (termínovka)',rlDetail(slug)]],web:ex.web||rlDetail(slug),note:'Převzato z agregátoru – před startem ověř u pořadatele.'}));
+});
 RACES.forEach(function(r){
   var night=/no[čc]n/i.test(r.name)||(r.start&&parseInt(r.start,10)>=17);
   if(night&&r.flags.indexOf('noční')<0)r.flags.push('noční');
@@ -173,7 +555,7 @@ var SURFLAB = {}; SURFS.forEach(function(x){SURFLAB[x.id]=x.label;});
 var TERR = [{id:'vse',label:'Vše'},{id:'rovina',label:'Rovina'},{id:'zvlneny',label:'Zvlněný'},{id:'horsky',label:'Horský'}];
 var FLAGS = [{id:'kids',label:'Dětské závody'},{id:'pes',label:'Se psem'},{id:'stafety',label:'Štafety'},{id:'nocni',label:'Noční'}];
 var SERIES = ['RunCzech','Běhej lesy','Ještěd SkyRace','7 Pohoří'];
-var PLATS = [{id:'cb',label:'Český běh (ČAS)'},{id:'sn',label:'stopnito.cz'},{id:'rc',label:'RunCzech'},{id:'bl',label:'Běhej lesy'},{id:'gt',label:'gotrail.run'}];
+var PLATS = [{id:'cb',label:'Český běh (ČAS)'},{id:'sn',label:'stopnito.cz'},{id:'rc',label:'RunCzech'},{id:'bl',label:'Běhej lesy'},{id:'gt',label:'gotrail.run'},{id:'rl',label:'running.life'}];
 var STATUS = [{id:'oficialni',label:'Oficiální termín'},{id:'agregator',label:'Z agregátoru'}];
 var RADII = [{id:25,label:'25 km'},{id:50,label:'50 km'},{id:100,label:'100 km'},{id:0,label:'Celá ČR'}];
 var KRAJE = ['Praha','Středočeský','Jihočeský','Plzeňský','Karlovarský','Ústecký','Liberecký','Královéhradecký','Pardubický','Vysočina','Jihomoravský','Olomoucký','Zlínský','Moravskoslezský'];
