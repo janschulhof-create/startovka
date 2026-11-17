@@ -677,7 +677,7 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
   const gcal = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(r.name) + '&dates=' + gdates + '&ctz=Europe/Prague&location=' + encodeURIComponent(where) + '&details=' + encodeURIComponent((r.web || '') + (lk.reg ? ' · přihláška: ' + lk.reg[1] : ''))
 
   if (mob) {
-    const main = lk.reg ? ['Přihláška', lk.reg[1]] : ['Web závodu', r.web]
+    const main = lk.reg ? ['Přihláška', lk.reg[1]] : [r.webOwn ? 'Web závodu' : 'Detail závodu', r.web]
     const shortDow = d2 ? DOW[d.getDay()].slice(0, 2) + '–' + DOW[d2.getDay()].slice(0, 2) : DOW[d.getDay()].slice(0, 2)
     return (
       <article className="mcard">
@@ -711,7 +711,8 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
             {(r.tracks.some((t) => t[1] !== null) || r.flags.length > 0) && <div className="mtrk">{r.tracks.filter((t) => t[1] !== null).map((t, i) => <span key={i} className="trk">{fmtKm(t[0])} km · ↑ {t[1]} m</span>)}{r.flags.map((f) => <span key={f} className="trk">{f}</span>)}</div>}
             {trackNote && <p style={{ margin: 0, fontSize: 12.5, color: '#5A5F66' }}>{trackNote}</p>}
             <div className="mlinks">
-              {lk.reg && <a href={r.web} target="_blank" rel="noopener">Web závodu</a>}
+              {lk.reg && <a href={r.web} target="_blank" rel="noopener">{r.webOwn ? 'Web závodu' : 'Detail závodu'}</a>}
+              {lk.prop && <a href={lk.prop[1]} target="_blank" rel="noopener">Propozice</a>}
               {lk.start && <a href={lk.start[1]} target="_blank" rel="noopener">Startovka</a>}
               {lk.res && <a href={lk.res[1]} target="_blank" rel="noopener">Výsledky</a>}
             </div>
@@ -767,6 +768,7 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
             {lk.reg && <a className="act hot" href={lk.reg[1]} target="_blank" rel="noopener">Přihláška<small>{lk.reg[0]}</small></a>}
             {lk.start && <a className="act" href={lk.start[1]} target="_blank" rel="noopener">Startovka<small>{lk.start[0]}</small></a>}
             {lk.res && <a className="act" href={lk.res[1]} target="_blank" rel="noopener">Výsledky<small>{lk.res[0]}</small></a>}
+            {lk.prop && <a className="act" href={lk.prop[1]} target="_blank" rel="noopener">Propozice<small>soubor</small></a>}
             {!lk.reg && !lk.start && !lk.res && <span className="none">Přihlášky a výsledky zatím nenapojené</span>}
           </div>
         </div>
@@ -786,7 +788,8 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
         </div>
       </div>
       <div className="cside" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, minWidth: 170 }}>
-        <a className="btn" href={r.web} target="_blank" rel="noopener">Web závodu</a>
+        <a className="btn" href={r.web} target="_blank" rel="noopener">{r.webOwn ? 'Web závodu' : 'Detail závodu'}</a>
+        {!r.webOwn && <span className="srcl" style={{ textAlign: 'right' }}>web pořadatele zatím nemáme</span>}
         <button className={saved ? 'ghost saved' : 'ghost'} aria-pressed={saved} onClick={onSave} style={{ minHeight: 36, fontSize: 13 }}>{saved ? '♥ V mém kalendáři' : '♡ Uložit závod'}</button>
         <span className="srcl">Zdroj termínu:</span>
         {r.src.map((x) => <a key={x[1]} className="srcl" href={x[1]} target="_blank" rel="noopener">{x[0]}</a>)}
