@@ -9,6 +9,7 @@ import {
   loadSaved, setSaved, setPendingSave, takePendingSave,
 } from './lib/auth'
 import { downloadIcs } from './lib/ics'
+import MapView from './components/MapView'
 
 const INITIAL = {
   q: '', radius: 0, dist: [], surf: [], terrain: 'vse', regions: [], kmMin: '', kmMax: '', flags: [], series: [], plats: [], status: [],
@@ -79,14 +80,34 @@ function Icon({ d, size = 15, w = 2 }) {
 
 export default function App() {
   const [s, setS] = useState(INITIAL)
-  const [loc, setLoc] = useState('Turnov')
+  const PREF = 'startovka.home'
+  const pref0 = (() => { try { return JSON.parse(localStorage.getItem(PREF) || 'null') } catch { return null } })()
+  const [loc, setLoc] = useState(pref0 && pref0.name ? pref0.name : 'Turnov')
+  const [geo, setGeo] = useState(pref0 && pref0.geo ? pref0.geo : null)
+  const [hasPref, setHasPref] = useState(!!pref0)
+  const [geoMsg, setGeoMsg] = useState('')
   const [adv, setAdv] = useState(false)
   const MQ = '(max-width: 720px)'
   const [mob, setMob] = useState(() => typeof window !== 'undefined' && window.matchMedia(MQ).matches)
   useEffect(() => { const m = window.matchMedia(MQ); const f = () => setMob(m.matches); m.addEventListener('change', f); return () => m.removeEventListener('change', f) }, [])
   const [sheet, setSheet] = useState(false)
   useEffect(() => { document.body.style.overflow = sheet ? 'hidden' : ''; return () => { document.body.style.overflow = '' } }, [sheet])
-  const home = useMemo(() => findPlace(loc), [loc])
+  const home = useMemo(() => geo ? { name: 'tvoje poloha (u ' + geo.near + ')', short: geo.near, lat: geo.lat, lon: geo.lon, found: true, geo: true } : findPlace(loc), [loc, geo])
+  useEffect(() => {
+    if (!hasPref) return
+    try { if (geo) localStorage.setItem(PREF, JSON.stringify({ geo })); else if (home.found) localStorage.setItem(PREF, JSON.stringify({ name: home.name })) } catch { /* ignore */ }
+  }, [geo, home, hasPref])
+  const typeLoc = (v) => { setGeo(null); setLoc(v); setHasPref(true); setGeoMsg(''); set({}) }
+  function useMyLocation() {
+    if (!navigator.geolocation) { setGeoMsg('Tento prohlížeč polohu nepodporuje – zadej město.'); return }
+    setGeoMsg('Zjišťuji polohu…')
+    navigator.geolocation.getCurrentPosition((p) => {
+      const lat = p.coords.latitude, lon = p.coords.longitude
+      let best = 'Turnov', bd = 1e9
+      PLACE_NAMES.forEach((n) => { const c = CITIES[n]; const d = (c[0] - lat) ** 2 + ((c[1] - lon) * 0.65) ** 2; if (d < bd) { bd = d; best = n } })
+      setGeo({ lat: Math.round(lat * 1000) / 1000, lon: Math.round(lon * 1000) / 1000, near: best }); setLoc(best); setHasPref(true); setGeoMsg(''); set({})
+    }, (e) => setGeoMsg(e.code === 1 ? 'Přístup k poloze je zamítnutý – povol ho v prohlížeči, nebo zadej město.' : 'Polohu se nepodařilo zjistit – zadej město.'), { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 })
+  }
   const kmOf = (r) => kmFrom(home, r)
   const pickCenter = (v) => setS((p) => {
     if (p.distC === v) return { ...p, distC: '', kmMin: '', kmMax: '', limit: PAGE }
@@ -265,13 +286,14 @@ export default function App() {
               <div>
                 <label htmlFor="loc" className="qlab" style={{ display: 'block' }}>Kde:</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-                  <input id="loc" type="text" value={loc} onChange={(e) => { setLoc(e.target.value); set({}) }} placeholder="tvoje město, např. Liberec" style={{ flex: '1 1 180px', minHeight: 48 }} list="mista" />
+                  <input id="loc" type="text" value={loc} onChange={(e) => typeLoc(e.target.value)} placeholder="tvoje město, např. Liberec" style={{ flex: '1 1 180px', minHeight: 48 }} list="mista" />
+                  <button type="button" className="geobtn" onClick={useMyLocation}><Icon size={16} d={<><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle cx="12" cy="12" r="7" /></>} />Moje poloha</button>
                   <datalist id="mista">{PLACE_NAMES.map((p) => <option key={p} value={p} />)}</datalist>
                   <div className="wrapchips">
                     {RADII.map((r) => <button key={r.id} className={s.radius === r.id ? 'qchip on' : 'qchip'} aria-pressed={s.radius === r.id} onClick={() => set({ radius: r.id })} style={{ minHeight: 48 }}>{r.id ? 'do ' + r.label : r.label}</button>)}
                   </div>
                 </div>
-                <p className="qhint">{home.found ? 'Vzdálenosti počítám od: ' + home.name : 'Místo „' + loc + '“ zatím neznám, počítám od Turnova. Zkus větší město.'}</p>
+                <p className="qhint">{geoMsg || (home.found ? 'Vzdálenosti počítám od: ' + home.name + (hasPref ? ' · pamatuji si to v tomto prohlížeči' : '') : 'Místo „' + loc + '“ zatím neznám, počítám od Turnova. Zkus větší město.')}</p>
               </div>
               <div>
                 <label htmlFor="q" className="qlab" style={{ display: 'block' }}>Hledat:</label>
@@ -444,7 +466,7 @@ export default function App() {
             <div className="mtool">
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
                 <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, fontWeight: 700, whiteSpace: 'nowrap' }}>{countLabel}</span>
-                {!isMuj && <button className="mloc" onClick={openLoc}>od: {home.name}</button>}
+                {!isMuj && <button className="mloc" onClick={openLoc}>od: {home.short || home.name}</button>}
               </div>
               {!isMuj && <select aria-label="Řadit" value={s.sort} onChange={(e) => setS((p) => ({ ...p, sort: e.target.value }))} style={{ minHeight: 38, fontSize: 14, padding: '0 8px' }}>
                 <option value="datum">Podle data</option><option value="blizko">Nejblíž</option><option value="kratke">Nejkratší</option>
@@ -476,6 +498,18 @@ export default function App() {
           {!isMuj && active.length > 0 && (
             <div className={mob ? 'mscroll' : ''} style={{ display: 'flex', flexWrap: mob ? 'nowrap' : 'wrap', gap: 8 }}>
               {active.map((a) => <button key={a.label} className="chip" onClick={a.fn} aria-label={'Odebrat filtr ' + a.label} style={{ background: '#FCE9DD', borderColor: '#F2C4A6', color: '#7C2D12', minHeight: 34, padding: '4px 12px' }}>{a.label}  ✕</button>)}
+            </div>
+          )}
+
+          {!isMuj && !hasPref && (
+            <div className="locbox">
+              <p><b>Odkud vyrážíš?</b> Vzdálenosti teď počítám od Turnova. Nastav si svoje místo – zapamatuju si ho.</p>
+              <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button className="geobtn" onClick={useMyLocation}>📍 Použít moji polohu</button>
+                <button className="ghost" style={{ minHeight: 44 }} onClick={() => { if (mob) openLoc(); else { const el = document.getElementById('loc'); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); el.select() } } }}>Zadat město</button>
+                <button className="linkbtn" style={{ color: '#5A5F66', fontWeight: 500 }} onClick={() => setHasPref(true)}>Turnov mi vyhovuje</button>
+              </span>
+              {geoMsg && <p style={{ flexBasis: '100%', color: '#7C2D12' }}>{geoMsg}</p>}
             </div>
           )}
 
@@ -518,18 +552,11 @@ export default function App() {
             </div>
           )}
 
-          {s.view === 'mapa' && (
-            <div style={{ position: 'relative', height: mob ? '68vh' : 560, borderRadius: 14, border: '1px solid #E2E0D8', overflow: 'hidden', backgroundColor: '#EEF1EA', backgroundImage: 'linear-gradient(#DDE3D6 1px, transparent 1px), linear-gradient(90deg, #DDE3D6 1px, transparent 1px)', backgroundSize: '60px 60px' }}>
-              <span style={{ position: 'absolute', left: 14, top: 12, fontSize: 12, color: '#5A5F66', background: 'rgba(255,255,255,.9)', padding: '4px 8px', borderRadius: 6 }}>Náhled mapy · skutečný mapový podklad přidáme · popisky se ukážou při ≤ 12 závodech</span>
-              <div style={{ position: 'absolute', inset: '40px 30px 30px 30px' }}>
-                <span style={{ position: 'absolute', left: hx + '%', top: hy + '%', width: 18, height: 18, margin: '-9px 0 0 -9px', borderRadius: '50%', background: '#15171A', border: '3px solid #FFFFFF' }} />
-                <span className="dlab" style={{ left: hx + '%', top: hy + '%', fontWeight: 600 }}>{home.name} (start)</span>
-                {res.map((r) => {
-                  const x = ((r.lon - 12.09) / (18.86 - 12.09) * 100).toFixed(1), y = ((51.06 - r.lat) / (51.06 - 48.55) * 100).toFixed(1)
-                  return <span key={r.id}><span className="dot" style={{ left: x + '%', top: y + '%' }} title={r.name} />{n <= 12 && <span className="dlab" style={{ left: x + '%', top: y + '%' }}>{new Date(r.from + 'T12:00:00').getDate()}. {MON[new Date(r.from + 'T12:00:00').getMonth()]} · {r.name}</span>}</span>
-                })}
-              </div>
-            </div>
+          {s.view === 'mapa' && !isMuj && (
+            <>
+              <MapView races={res} home={home} height={mob ? '62vh' : 600} onOpen={(id) => { const r = RACES.find((x) => x.id === id); if (r) { setS((p) => ({ ...p, view: 'seznam', q: r.name, limit: PAGE })); window.scrollTo(0, 0) } }} />
+              <p style={{ margin: 0, fontSize: 12.5, color: '#5A5F66' }}>Body jsou podle obce (střed), ne přesné místo startu. Klepnutím na název závodu ho otevřeš v seznamu.</p>
+            </>
           )}
 
           {mob ? (

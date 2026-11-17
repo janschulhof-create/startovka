@@ -165,3 +165,11 @@ select:focus-visible,input:focus-visible{outline:2px solid #C2410C;outline-offse
 
 .mtool{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .mloc{border:0;background:none;padding:4px 0;font:500 13.5px Inter,sans-serif;color:#C2410C;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap}
+.mpop{font:13px/1.4 Inter,sans-serif;display:flex;flex-direction:column;gap:8px;max-height:240px;overflow:auto}
+.mpi a{color:#C2410C;font-weight:600}
+.mpi span{color:#5A5F66;font-size:12px}
+.leaflet-container{font-family:Inter,sans-serif}
+.locbox{background:#FFFFFF;border:1px solid #F2C4A6;border-radius:14px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.locbox p{margin:0;flex:1 1 220px;font-size:14px;color:#2B2F35}
+.geobtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:10px;border:1.5px solid #C2410C;background:#FFFFFF;color:#C2410C;font:600 14px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.geobtn:hover{background:#FCE9DD}
