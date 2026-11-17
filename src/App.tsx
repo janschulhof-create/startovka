@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from 'react'
+import { tr, getLang, setLangGlobal } from './lib/i18n'
 import {
   RACES, HOME, MON, DOW, DISTS, SURFS, SURFLAB, TERR, FLAGS, SERIES, PLATS, STATUS, RADII, KRAJE, KMP, TERRLAB, PAGE,
   regionLabel, terrainOf, hasFlag, fmtKm, hasReg, resultLink,
@@ -12,6 +13,7 @@ import { downloadIcs } from './lib/ics'
 import MapView from './components/MapView'
 import AddRace, { rowToRace } from './components/AddRace'
 import { supabase } from './lib/auth'
+import { StaticPage, RaceDetail, ReportModal, Footer, shareRace, loadReports, raceUrl } from './components/Pages'
 
 const INITIAL = {
   q: '', radius: 0, dist: [], surf: [], terrain: 'vse', regions: [], kmMin: '', kmMax: '', flags: [], series: [], plats: [], status: [],
@@ -19,27 +21,37 @@ const INITIAL = {
   types: [], who: [], dateFrom: '', dateTo: '', distC: '', tol: 2,
 }
 
-const MONFULL = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec']
+const MONFULL = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'].map((m) => tr(m))
 const QTYPES = [
-  { id: 'silnice', label: 'Silnice', test: (r) => r.surface === 'silnice' },
-  { id: 'trail', label: 'Trail / kros', test: (r) => r.surface === 'trail' },
-  { id: 'vrch', label: 'Běh do vrchu', test: (r) => r.surface === 'vrch' },
-  { id: 'smiseny', label: 'Smíšený terén', test: (r) => r.surface === 'smiseny' },
-  { id: 'OCR', label: 'Překážkový (OCR)', test: (r) => r.surface === 'OCR' },
-  { id: 'stafety', label: 'Štafety', test: (r) => hasFlag(r, 'stafety') },
-  { id: 'nocni', label: 'Noční běh', test: (r) => hasFlag(r, 'nocni') },
-  { id: 'ultra', label: 'Ultra', test: (r) => r.tracks.some((t) => t[0] > 42.5) },
+  { id: 'silnice', label: tr('Silnice'), test: (r) => r.surface === 'silnice' },
+  { id: 'trail', label: tr('Trail / kros'), test: (r) => r.surface === 'trail' },
+  { id: 'vrch', label: tr('Běh do vrchu'), test: (r) => r.surface === 'vrch' },
+  { id: 'smiseny', label: tr('Smíšený terén'), test: (r) => r.surface === 'smiseny' },
+  { id: 'OCR', label: tr('Překážkový (OCR)'), test: (r) => r.surface === 'OCR' },
+  { id: 'stafety', label: tr('Štafety'), test: (r) => hasFlag(r, 'stafety') },
+  { id: 'nocni', label: tr('Noční běh'), test: (r) => hasFlag(r, 'nocni') },
+  { id: 'ultra', label: tr('Ultra'), test: (r) => r.tracks.some((t) => t[0] > 42.5) },
 ]
 const QWHO = [
-  { id: 'kids', label: 'Pro děti', test: (r) => r.kids },
-  { id: 'pes', label: 'Se psem', test: (r) => hasFlag(r, 'pes') },
-  { id: 'reg', label: 'Online přihláška', test: (r) => hasReg(r) },
-  { id: 'ofic', label: 'Ověřený termín', test: (r) => r.status === 'oficialni' },
+  { id: 'kids', label: tr('Pro děti'), test: (r) => r.kids },
+  { id: 'pes', label: tr('Se psem'), test: (r) => hasFlag(r, 'pes') },
+  { id: 'reg', label: tr('Online přihláška'), test: (r) => hasReg(r) },
+  { id: 'ofic', label: tr('Ověřený termín'), test: (r) => r.status === 'oficialni' },
 ]
 const isoD = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
 const addD = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x }
 function today0() { const t = new Date(); t.setHours(12, 0, 0, 0); return t }
 function weekend(offset) { const t = today0(); const day = t.getDay(); if (day === 0) { const sat = addD(t, -1 + offset * 7); return [isoD(offset ? sat : t), isoD(addD(sat, 1))] } const sat = addD(t, 6 - day + offset * 7); return [isoD(sat), isoD(addD(sat, 1))] }
+const QUOTES = [
+  [tr('Každý cíl začíná na startovní čáře.'), tr('Najdi tu svoji – od lesních krosů po maraton, kousek od domu i na druhém konci republiky.')],
+  [tr('Nečekej na motivaci. Přihlas se na závod.'), tr('Datum v kalendáři dělá z tréninku plán. Vyber si start a zbytek přijde sám.')],
+  [tr('Kilometry se nedají koupit. Dají se jen naběhat.'), tr('Závody po celém Česku na jednom místě – s přihláškou, navigací i výsledky.')],
+  [tr('Dnes trénink, v sobotu startovka.'), tr('Najdi závod na víkend, ulož si ho do kalendáře a jdi do toho.')],
+  [tr('Běž svůj závod.'), tr('Krátký, dlouhý, po silnici nebo lesem. Tady najdeš ten pravý.')],
+  [tr('Nejtěžší je vyběhnout ze dveří.'), tr('Závod ti najdeme my – blízko, ve správný den a na správnou vzdálenost.')],
+]
+const switchLang = (l) => { if (l !== getLang()) { setLangGlobal(l); window.location.reload() } }
+const QUOTE = QUOTES[Math.floor(Date.now() / 864e5) % QUOTES.length]
 const TODAY = isoD(today0())
 const isPast = (r) => (r.to || r.from) < TODAY
 const RES_FROM = isoD(addD(today0(), -35))
@@ -47,17 +59,17 @@ function weekLabel(iso) {
   const d = new Date(iso + 'T12:00:00'); const dow = (d.getDay() + 6) % 7
   const mon = addD(d, -dow), sun = addD(mon, 6)
   const f = (x) => x.getDate() + '. ' + (x.getMonth() + 1) + '.'
-  return { key: isoD(mon), label: (dow >= 5 ? 'Víkend ' + f(addD(mon, 5)) + '–' + f(sun) : 'Týden ' + f(mon) + '–' + f(sun)) }
+  return { key: isoD(mon), label: (dow >= 5 ? tr('Víkend ') + f(addD(mon, 5)) + '–' + f(sun) : tr('Týden ') + f(mon) + '–' + f(sun)) }
 }
 const GOOGLE = import.meta.env.VITE_AUTH_GOOGLE === '1'
 const QWHEN = [
-  { id: 'dnes', label: 'Dnes', range: () => { const t = isoD(today0()); return [t, t] } },
-  { id: 'zitra', label: 'Zítra', range: () => { const t = isoD(addD(today0(), 1)); return [t, t] } },
-  { id: 'vikend', label: 'Tento víkend', range: () => weekend(0) },
-  { id: 'pristi', label: 'Příští víkend', range: () => weekend(1) },
+  { id: 'dnes', label: tr('Dnes'), range: () => { const t = isoD(today0()); return [t, t] } },
+  { id: 'zitra', label: tr('Zítra'), range: () => { const t = isoD(addD(today0(), 1)); return [t, t] } },
+  { id: 'vikend', label: tr('Tento víkend'), range: () => weekend(0) },
+  { id: 'pristi', label: tr('Příští víkend'), range: () => weekend(1) },
 ]
-const DCENT = [{ v: 5, l: '5 km' }, { v: 10, l: '10 km' }, { v: 15, l: '15 km' }, { v: 21.1, l: 'Půlmaraton' }, { v: 30, l: '30 km' }, { v: 42.2, l: 'Maraton' }, { v: 'ultra', l: 'Ultra 50+' }]
-const TOLS = [{ v: 0.5, l: 'přesně' }, { v: 2, l: '± 2 km' }, { v: 5, l: '± 5 km' }, { v: 10, l: '± 10 km' }]
+const DCENT = [{ v: 5, l: tr('5 km') }, { v: 10, l: tr('10 km') }, { v: 15, l: tr('15 km') }, { v: 21.1, l: tr('Půlmaraton') }, { v: 30, l: tr('30 km') }, { v: 42.2, l: tr('Maraton') }, { v: 'ultra', l: tr('Ultra 50+') }]
+const TOLS = [{ v: 0.5, l: tr('přesně') }, { v: 2, l: tr('± 2 km') }, { v: 5, l: tr('± 5 km') }, { v: 10, l: tr('± 10 km') }]
 const r1 = (x) => Math.round(x * 10) / 10
 const CITIES = { 'Praha': [50.087, 14.421], 'Brno': [49.195, 16.608], 'Ostrava': [49.835, 18.292], 'Plzeň': [49.747, 13.378], 'Liberec': [50.767, 15.056], 'Olomouc': [49.594, 17.251], 'České Budějovice': [48.975, 14.474], 'Hradec Králové': [50.209, 15.832], 'Ústí nad Labem': [50.661, 14.032], 'Pardubice': [50.034, 15.781], 'Zlín': [49.226, 17.667], 'Jihlava': [49.396, 15.591], 'Karlovy Vary': [50.231, 12.871], 'Jablonec nad Nisou': [50.724, 15.171], 'Turnov': [50.587, 15.157], 'Mladá Boleslav': [50.411, 14.903], 'Kladno': [50.147, 14.103], 'Most': [50.503, 13.636], 'Opava': [49.938, 17.902], 'Frýdek-Místek': [49.683, 18.350], 'Teplice': [50.640, 13.825], 'Děčín': [50.773, 14.196], 'Chomutov': [50.460, 13.418], 'Karviná': [49.854, 18.543], 'Havířov': [49.780, 18.430], 'Prostějov': [49.472, 17.111], 'Přerov': [49.455, 17.451], 'Třebíč': [49.215, 15.882], 'Tábor': [49.414, 14.658], 'Kolín': [50.028, 15.200], 'Trutnov': [50.561, 15.913], 'Semily': [50.602, 15.335], 'Jičín': [50.437, 15.352], 'Česká Lípa': [50.686, 14.538], 'Znojmo': [48.856, 16.049], 'Písek': [49.309, 14.148], 'Příbram': [49.690, 14.010], 'Cheb': [50.080, 12.374], 'Náchod': [50.417, 16.163], 'Vsetín': [49.339, 17.996] }
 RACES.forEach((r) => { const k = r.place.split(/ [–-] /)[0]; if (!CITIES[k]) CITIES[k] = [r.lat, r.lon] })
@@ -110,6 +122,24 @@ export default function App() {
     if (!supabase) return
     supabase.from('user_races').select('*').gte('date_from', RES_FROM).limit(2000).then(({ data }) => { if (data) addRaces(data.map(rowToRace)) })
   }, [])
+  // ---- adresy (stránka závodu, statické stránky) ----
+  const [path, setPath] = useState(() => (typeof location !== 'undefined' ? location.pathname : '/'))
+  useEffect(() => { const f = () => setPath(location.pathname); window.addEventListener('popstate', f); return () => window.removeEventListener('popstate', f) }, [])
+  const go = (p) => { if (p !== location.pathname) history.pushState(null, '', p); setPath(p); window.scrollTo(0, 0) }
+  const raceId = (path.match(/^\/zavod\/([^/]+)\/?$/) || [])[1]
+  const pageKind = (path.match(/^\/(o-projektu|ochrana-udaju|podminky)\/?$/) || [])[1]
+  const routeRace = raceId ? RACES.find((x) => x.id === decodeURIComponent(raceId)) : null
+  const routed = !!(raceId || pageKind)
+  const [report, setReport] = useState(null)
+  const [toastMsg, setToastMsg] = useState('')
+  const toast = (m) => { setToastMsg(m); setTimeout(() => setToastMsg(''), 2600) }
+  useEffect(() => { loadReports().then((ch) => { if (ch) setVer((v) => v + 1) }) }, [ver > 0])
+  useEffect(() => {
+    if (routeRace) document.title = routeRace.name + ' – ' + routeRace.place.split(' – ')[0] + ' | Startovka'
+    else if (!pageKind) document.title = tr('Startovka – běžecké závody v Česku')
+  }, [routeRace, pageKind])
+  const nearbyOf = (r) => RACES.filter((x) => x.id !== r.id && !isPast(x) && !(x.user && x.reported >= 3)).map((x) => [x, kmFrom(r, x)]).filter((a) => a[1] <= 40).sort((a, b) => a[0].from.localeCompare(b[0].from)).slice(0, 6).map((a) => a[0])
+  const cardProps = (r) => ({ onOpen: () => go(raceUrl(r)), onShare: () => shareRace(r, toast), onReport: () => setReport(r) })
   useEffect(() => { document.body.style.overflow = sheet ? 'hidden' : ''; return () => { document.body.style.overflow = '' } }, [sheet])
   const home = useMemo(() => geo ? { name: 'tvoje poloha (u ' + geo.near + ')', short: geo.near, lat: geo.lat, lon: geo.lon, found: true, geo: true } : findPlace(loc), [loc, geo])
   useEffect(() => {
@@ -118,14 +148,14 @@ export default function App() {
   }, [geo, home, hasPref])
   const typeLoc = (v) => { setGeo(null); setLoc(v); setHasPref(true); setGeoMsg(''); set({}) }
   function useMyLocation() {
-    if (!navigator.geolocation) { setGeoMsg('Tento prohlížeč polohu nepodporuje – zadej město.'); return }
-    setGeoMsg('Zjišťuji polohu…')
+    if (!navigator.geolocation) { setGeoMsg(tr('Tento prohlížeč polohu nepodporuje – zadej město.')); return }
+    setGeoMsg(tr('Zjišťuji polohu…'))
     navigator.geolocation.getCurrentPosition((p) => {
       const lat = p.coords.latitude, lon = p.coords.longitude
       let best = 'Turnov', bd = 1e9
       PLACE_NAMES.forEach((n) => { const c = CITIES[n]; const d = (c[0] - lat) ** 2 + ((c[1] - lon) * 0.65) ** 2; if (d < bd) { bd = d; best = n } })
       setGeo({ lat: Math.round(lat * 1000) / 1000, lon: Math.round(lon * 1000) / 1000, near: best }); setLoc(best); setHasPref(true); setGeoMsg(''); set({})
-    }, (e) => setGeoMsg(e.code === 1 ? 'Přístup k poloze je zamítnutý – povol ho v prohlížeči, nebo zadej město.' : 'Polohu se nepodařilo zjistit – zadej město.'), { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 })
+    }, (e) => setGeoMsg(e.code === 1 ? tr('Přístup k poloze je zamítnutý – povol ho v prohlížeči, nebo zadej město.') : tr('Polohu se nepodařilo zjistit – zadej město.')), { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 })
   }
   const kmOf = (r) => kmFrom(home, r)
   const pickCenter = (v) => setS((p) => {
@@ -166,8 +196,8 @@ export default function App() {
   }
   async function doEmail() {
     const email = auth.email.trim()
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return setAuth((a) => ({ ...a, error: 'Zadej platný e-mail.' }))
-    if (auth.pass.length < 8) return setAuth((a) => ({ ...a, error: 'Heslo musí mít alespoň 8 znaků.' }))
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return setAuth((a) => ({ ...a, error: tr('Zadej platný e-mail.') }))
+    if (auth.pass.length < 8) return setAuth((a) => ({ ...a, error: tr('Heslo musí mít alespoň 8 znaků.') }))
     setAuth((a) => ({ ...a, busy: true, error: '', info: '' }))
     setPendingSave(auth.pending)
     const r = auth.mode === 'register' ? await signUpEmail(auth.name.trim(), email, auth.pass) : await signInEmail(email, auth.pass)
@@ -176,7 +206,7 @@ export default function App() {
   }
   async function doReset() {
     const email = auth.email.trim()
-    if (!email) return setAuth((a) => ({ ...a, error: 'Nejdřív vyplň e-mail.' }))
+    if (!email) return setAuth((a) => ({ ...a, error: tr('Nejdřív vyplň e-mail.') }))
     const msg = await resetPassword(email)
     setAuth((a) => ({ ...a, info: msg, error: '' }))
   }
@@ -193,6 +223,7 @@ export default function App() {
 
   // ---- filtrování ----
   function match(r, skip) {
+    if (r.user && r.reported >= 3) return false
     if (s.view === 'vysledky') { if (!isPast(r) || r.from < RES_FROM) return false } else if (isPast(r)) return false
     if (s.kmMin !== '' || s.kmMax !== '') { const lo = s.kmMin === '' ? 0 : parseFloat(s.kmMin), hi = s.kmMax === '' ? 9999 : parseFloat(s.kmMax); if (!r.tracks.some((t) => t[0] >= lo && t[0] <= hi)) return false }
     if (s.radius && kmOf(r) > s.radius) return false
@@ -245,7 +276,7 @@ export default function App() {
   // aktivní filtry
   const active = []
   const add = (label, fn) => active.push({ label, fn })
-  if (s.regOnly) add('jen s online přihláškou', () => set({ regOnly: false }))
+  if (s.regOnly) add(tr('jen s online přihláškou'), () => set({ regOnly: false }))
   if (s.radius) add('do ' + s.radius + ' km', () => set({ radius: 0 }))
   if (s.q) add('„' + s.q + '“', () => set({ q: '' }))
   if (s.kmMin !== '' || s.kmMax !== '') add(s.kmMax === '' ? s.kmMin + '+ km' : s.kmMin === '' ? 'do ' + s.kmMax + ' km' : s.kmMin + '–' + s.kmMax + ' km', () => set({ kmMin: '', kmMax: '' }))
@@ -263,9 +294,9 @@ export default function App() {
   if (s.month) add(MON[parseInt(s.month.slice(5, 7), 10) - 1] + ' ' + s.month.slice(0, 4), () => set({ month: '' }))
 
   const advCount = (s.terrain !== 'vse' ? 1 : 0) + s.series.length + s.regions.length + s.plats.length
-  const kmSummary = s.kmMin !== '' || s.kmMax !== '' ? 'Hledám tratě ' + (s.kmMax === '' ? 'od ' + fmtKm(s.kmMin) + ' km' : s.kmMin === '' ? 'do ' + fmtKm(s.kmMax) + ' km' : fmtKm(s.kmMin) + '–' + fmtKm(s.kmMax) + ' km') + '. Stačí, když se do rozmezí vejde jedna z tratí závodu.' : 'Vyber délku a rozptyl, nebo zadej vlastní rozmezí.'
+  const kmSummary = s.kmMin !== '' || s.kmMax !== '' ? tr('Hledám tratě ') + (s.kmMax === '' ? 'od ' + fmtKm(s.kmMin) + ' km' : s.kmMin === '' ? 'do ' + fmtKm(s.kmMax) + ' km' : fmtKm(s.kmMin) + '–' + fmtKm(s.kmMax) + ' km') + tr('. Stačí, když se do rozmezí vejde jedna z tratí závodu.') : tr('Vyber délku a rozptyl, nebo zadej vlastní rozmezí.')
   const n = res.length
-  const countLabel = isRes ? n + (n === 1 ? ' doběhnutý závod' : n >= 2 && n <= 4 ? ' doběhnuté závody' : ' doběhnutých závodů') : n + (n === 1 ? ' závod' : n >= 2 && n <= 4 ? ' závody' : ' závodů')
+  const countLabel = isRes ? n + (n === 1 ? tr(' doběhnutý závod') : n >= 2 && n <= 4 ? tr(' doběhnuté závody') : tr(' doběhnutých závodů')) : n + (n === 1 ? tr(' závod') : n >= 2 && n <= 4 ? tr(' závody') : tr(' závodů'))
   const cntP = (p) => RACES.filter((r) => r.plat.includes(p)).length
   const nReg = RACES.filter(hasReg).length
   const regOnlyCount = RACES.filter((r) => match(r, 'reg')).filter(hasReg).length
@@ -275,12 +306,12 @@ export default function App() {
 
   let mujSummary = ''
   if (isMuj) {
-    if (!n) mujSummary = 'Zatím žádné uložené závody'
+    if (!n) mujSummary = tr('Zatím žádné uložené závody')
     else {
       const today = new Date(); today.setHours(0, 0, 0, 0)
       const next = res.find((r) => new Date(r.from + 'T00:00:00') >= today)
-      mujSummary = n + (n === 1 ? ' uložený závod' : n <= 4 ? ' uložené závody' : ' uložených závodů')
-      if (next) { const dd = Math.round((new Date(next.from + 'T00:00:00') - today) / 86400000); mujSummary += ' · nejbližší ' + (dd === 0 ? 'dnes' : dd === 1 ? 'zítra' : 'za ' + dd + (dd < 5 ? ' dny' : ' dní')) + ': ' + next.name }
+      mujSummary = n + (n === 1 ? tr(' uložený závod') : n <= 4 ? tr(' uložené závody') : tr(' uložených závodů'))
+      if (next) { const dd = Math.round((new Date(next.from + 'T00:00:00') - today) / 86400000); mujSummary += tr(' · nejbližší ') + (dd === 0 ? 'dnes' : dd === 1 ? tr('zítra') : 'za ' + dd + (dd < 5 ? ' dny' : tr(' dní'))) + ': ' + next.name }
     }
   }
 
@@ -289,13 +320,13 @@ export default function App() {
   const reset = () => setS({ ...INITIAL, view: s.view, sort: s.sort })
 
   const filterPanel = (
-          <section aria-label="Filtry" className="qpanel">
+          <section aria-label={tr('Filtry')} className="qpanel">
             {!isRes && (<>
             <div className="qrow">
-              <p className="qlab">Kdy:</p>
+              <p className="qlab">{tr('Kdy:')}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-                <label className="qdate"><span className="sr">Od data</span><input type="date" value={s.dateFrom} onChange={(e) => set({ dateFrom: e.target.value, month: '' })} /></label>
-                <label className="qdate"><span className="sr">Do data</span><input type="date" value={s.dateTo} onChange={(e) => set({ dateTo: e.target.value, month: '' })} /></label>
+                <label className="qdate"><span className="sr">{tr('Od data')}</span><input type="date" value={s.dateFrom} onChange={(e) => set({ dateFrom: e.target.value, month: '' })} /></label>
+                <label className="qdate"><span className="sr">{tr('Do data')}</span><input type="date" value={s.dateTo} onChange={(e) => set({ dateTo: e.target.value, month: '' })} /></label>
                 <span style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginLeft: 6 }}>
                   {QWHEN.map((w) => { const r = w.range(); const on = s.dateFrom === r[0] && s.dateTo === r[1]; return <button key={w.id} className={on ? 'qlink on' : 'qlink'} aria-pressed={on} onClick={() => set(on ? { dateFrom: '', dateTo: '' } : { dateFrom: r[0], dateTo: r[1], month: '' })}>{w.label}</button> })}
                 </span>
@@ -308,50 +339,50 @@ export default function App() {
             </>)}
             <div className="qrow qsplit">
               <div>
-                <label htmlFor="loc" className="qlab" style={{ display: 'block' }}>Kde:</label>
+                <label htmlFor="loc" className="qlab" style={{ display: 'block' }}>{tr('Kde:')}</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-                  <input id="loc" type="text" value={loc} onChange={(e) => typeLoc(e.target.value)} placeholder="tvoje město, např. Liberec" style={{ flex: '1 1 180px', minHeight: 48 }} list="mista" />
-                  <button type="button" className="geobtn" onClick={useMyLocation}><Icon size={16} d={<><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle cx="12" cy="12" r="7" /></>} />Moje poloha</button>
+                  <input id="loc" type="text" value={loc} onChange={(e) => typeLoc(e.target.value)} placeholder={tr('tvoje město, např. Liberec')} style={{ flex: '1 1 180px', minHeight: 48 }} list="mista" />
+                  <button type="button" className="geobtn" onClick={useMyLocation}><Icon size={16} d={<><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle cx="12" cy="12" r="7" /></>} />{tr('Moje poloha')}</button>
                   <datalist id="mista">{PLACE_NAMES.map((p) => <option key={p} value={p} />)}</datalist>
                   <div className="wrapchips">
                     {RADII.map((r) => <button key={r.id} className={s.radius === r.id ? 'qchip on' : 'qchip'} aria-pressed={s.radius === r.id} onClick={() => set({ radius: r.id })} style={{ minHeight: 48 }}>{r.id ? 'do ' + r.label : r.label}</button>)}
                   </div>
                 </div>
-                <p className="qhint">{geoMsg || (home.found ? 'Vzdálenosti počítám od: ' + home.name + (hasPref ? ' · pamatuji si to v tomto prohlížeči' : '') : 'Místo „' + loc + '“ zatím neznám, počítám od Turnova. Zkus větší město.')}</p>
+                <p className="qhint">{geoMsg || (home.found ? tr('Vzdálenosti počítám od: ') + home.name + (hasPref ? tr(' · pamatuji si to v tomto prohlížeči') : '') : tr('Místo „') + loc + tr('“ zatím neznám, počítám od Turnova. Zkus větší město.'))}</p>
               </div>
               <div>
-                <label htmlFor="q" className="qlab" style={{ display: 'block' }}>Hledat:</label>
-                <input id="q" type="text" value={s.q} onChange={(e) => set({ q: e.target.value })} placeholder="název závodu, např. Ještěd" style={{ width: '100%', minHeight: 48 }} />
+                <label htmlFor="q" className="qlab" style={{ display: 'block' }}>{tr('Hledat:')}</label>
+                <input id="q" type="text" value={s.q} onChange={(e) => set({ q: e.target.value })} placeholder={tr('název závodu, např. Ještěd')} style={{ width: '100%', minHeight: 48 }} />
               </div>
             </div>
 
             <div className="qrow">
-              <p className="qlab">Typ závodu:</p>
+              <p className="qlab">{tr('Typ závodu:')}</p>
               <div className="wrapchips">
                 {QTYPES.map((t) => { const on = s.types.includes(t.id); return <button key={t.id} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => tog('types', t.id)}><QIcon id={t.id} />{t.label}</button> })}
               </div>
             </div>
 
             <div className="qrow" style={{ borderBottom: 0 }}>
-              <p className="qlab">Vzdálenost:</p>
+              <p className="qlab">{tr('Vzdálenost:')}</p>
               <div className="wrapchips">
                 {DCENT.map((d) => { const on = s.distC === d.v; return <button key={d.l} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => pickCenter(d.v)}>{d.l}</button> })}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', alignItems: 'center', marginTop: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 14, color: '#4A4F56', fontWeight: 600 }}>Rozptyl</span>
+                  <span style={{ fontSize: 14, color: '#4A4F56', fontWeight: 600 }}>{tr('Rozptyl')}</span>
                   <span className="tolseg">
                     {TOLS.map((t) => <button key={t.v} className={s.tol === t.v ? 'on' : ''} aria-pressed={s.tol === t.v} onClick={() => setTol(t.v)}>{t.l}</button>)}
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 14, color: '#4A4F56', fontWeight: 600 }}>nebo vlastní rozmezí</span>
-                  <label htmlFor="kmmin" className="sr">Od kilometrů</label>
-                  <input id="kmmin" className="kmin" type="number" min="0" placeholder="od" value={s.kmMin} onChange={(e) => set({ kmMin: e.target.value, distC: '' })} />
+                  <span style={{ fontSize: 14, color: '#4A4F56', fontWeight: 600 }}>{tr('nebo vlastní rozmezí')}</span>
+                  <label htmlFor="kmmin" className="sr">{tr('Od kilometrů')}</label>
+                  <input id="kmmin" className="kmin" type="number" min="0" placeholder={tr('od')} value={s.kmMin} onChange={(e) => set({ kmMin: e.target.value, distC: '' })} />
                   <span aria-hidden="true">–</span>
-                  <label htmlFor="kmmax" className="sr">Do kilometrů</label>
-                  <input id="kmmax" className="kmin" type="number" min="0" placeholder="do" value={s.kmMax} onChange={(e) => set({ kmMax: e.target.value, distC: '' })} />
-                  <span style={{ fontSize: 14, color: '#5A5F66' }}>km</span>
+                  <label htmlFor="kmmax" className="sr">{tr('Do kilometrů')}</label>
+                  <input id="kmmax" className="kmin" type="number" min="0" placeholder={tr('do')} value={s.kmMax} onChange={(e) => set({ kmMax: e.target.value, distC: '' })} />
+                  <span style={{ fontSize: 14, color: '#5A5F66' }}>{tr('km')}</span>
                 </div>
               </div>
               <p className="qhint">{kmSummary}</p>
@@ -369,20 +400,20 @@ export default function App() {
               <div className="advpanel">
                 <div className="advgrid">
                   <div>
-                    <p className="flab">Profil trati</p>
+                    <p className="flab">{tr('Profil trati')}</p>
                     <div className="wrapchips">{TERR.map((t) => <button key={t.id} className={s.terrain === t.id ? 'chip on' : 'chip'} aria-pressed={s.terrain === t.id} onClick={() => set({ terrain: t.id })}>{t.label}</button>)}</div>
-                    <p style={{ margin: '8px 0 0', fontSize: 12.5, color: '#5A5F66', lineHeight: 1.5 }}>Podle převýšení na km. Zatím známe jen u části závodů.</p>
+                    <p style={{ margin: '8px 0 0', fontSize: 12.5, color: '#5A5F66', lineHeight: 1.5 }}>{tr('Podle převýšení na km. Zatím známe jen u části závodů.')}</p>
                   </div>
                   <div>
-                    <p className="flab">Seriál</p>
+                    <p className="flab">{tr('Seriál')}</p>
                     <div className="wrapchips">{counted(SERIES, 'series', 'series', (r, id) => r.series === id).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <p className="flab">Kraj</p>
+                    <p className="flab">{tr('Kraj')}</p>
                     <div className="wrapchips">{counted(KRAJE, 'regions', 'region', (r, id) => r.region === id).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <p className="flab">Zdroj dat</p>
+                    <p className="flab">{tr('Zdroj dat')}</p>
                     <div className="wrapchips">{counted(PLATS, 'plats', 'plat', (r, id) => r.plat.includes(id)).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
                   </div>
                 </div>
@@ -394,24 +425,24 @@ export default function App() {
   const wk = weekend(0)
   const onWk = s.dateFrom === wk[0] && s.dateTo === wk[1]
   const QUICK = [
-    { l: 'Tento víkend', on: onWk, f: () => set(onWk ? { dateFrom: '', dateTo: '' } : { dateFrom: wk[0], dateTo: wk[1], month: '' }) },
-    { l: 'Do 50 km', on: s.radius === 50, f: () => set({ radius: s.radius === 50 ? 0 : 50 }) },
-    { l: '5 km', on: s.distC === 5, f: () => pickCenter(5) },
-    { l: '10 km', on: s.distC === 10, f: () => pickCenter(10) },
-    { l: 'Půlmaraton', on: s.distC === 21.1, f: () => pickCenter(21.1) },
-    { l: 'Trail', on: s.types.includes('trail'), f: () => tog('types', 'trail') },
-    { l: 'Silnice', on: s.types.includes('silnice'), f: () => tog('types', 'silnice') },
-    { l: 'S online přihláškou', on: s.regOnly, f: () => set({ regOnly: !s.regOnly }) },
+    { l: tr('Tento víkend'), on: onWk, f: () => set(onWk ? { dateFrom: '', dateTo: '' } : { dateFrom: wk[0], dateTo: wk[1], month: '' }) },
+    { l: tr('Do 50 km'), on: s.radius === 50, f: () => set({ radius: s.radius === 50 ? 0 : 50 }) },
+    { l: tr('5 km'), on: s.distC === 5, f: () => pickCenter(5) },
+    { l: tr('10 km'), on: s.distC === 10, f: () => pickCenter(10) },
+    { l: tr('Půlmaraton'), on: s.distC === 21.1, f: () => pickCenter(21.1) },
+    { l: tr('Trail'), on: s.types.includes('trail'), f: () => tog('types', 'trail') },
+    { l: tr('Silnice'), on: s.types.includes('silnice'), f: () => tog('types', 'silnice') },
+    { l: tr('S online přihláškou'), on: s.regOnly, f: () => set({ regOnly: !s.regOnly }) },
   ]
   const fCount = active.filter((a) => !a.label.startsWith('„')).length
   const openLoc = () => { setSheet(true); setTimeout(() => { const el = document.getElementById('loc'); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); el.select() } }, 80) }
-  const goView = (v) => { if (v === 'muj') return showMuj(); setS((p) => ({ ...p, view: v })); window.scrollTo(0, 0) }
+  const goView = (v) => { if (routed) go('/'); if (v === 'muj') return showMuj(); setS((p) => ({ ...p, view: v })); window.scrollTo(0, 0) }
 
   return (
     <div className={mob ? 'mroot' : ''} style={{ fontFamily: 'Inter, sans-serif', color: '#15171A', background: '#F5F4EF', minHeight: '100vh' }}>
       {DEMO && (
         <div role="status" style={{ background: '#FCE9DD', color: '#7C2D12', fontSize: 13, padding: '8px 16px', textAlign: 'center' }}>
-          {mob ? 'Testovací verze – účty jen v tomto prohlížeči' : 'Testovací verze · účty a uložené závody se zatím ukládají jen v tomto prohlížeči'}
+          {mob ? tr('Testovací verze – účty jen v tomto prohlížeči') : tr('Testovací verze · účty a uložené závody se zatím ukládají jen v tomto prohlížeči')}
         </div>
       )}
       {mob ? (<>
@@ -420,11 +451,11 @@ export default function App() {
           <div style={{ width: 30, height: 30, borderRadius: 8, background: '#C2410C', display: 'grid', placeItems: 'center', color: '#fff' }}>
             <Icon size={17} w={2.2} d={<><path d="M4 21V4" /><path d="M4 4h12l-2 4 2 4H4" /></>} />
           </div>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 19 }}>Startovka</span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 19 }}>{tr('Startovka')}</span>
         </div>
-        <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><button className="hbtn" onClick={() => setAddOpen(true)} style={{ minHeight: 36, padding: '0 10px', borderColor: '#C2410C', color: '#FDBA8C' }} aria-label="Přidat závod">+ Závod</button>
-        {!user ? <button className="hbtn" onClick={() => openAuth('login')} style={{ minHeight: 36 }}>Přihlásit</button>
-          : <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span className="avatar" aria-hidden="true" style={{ width: 30, height: 30, fontSize: 12 }}>{initials}</span><button className="hbtn" onClick={doLogout} style={{ minHeight: 34, fontSize: 13, padding: '0 10px' }}>Odhlásit</button></span>}</span>
+        <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><button className="hbtn" onClick={() => switchLang(getLang() === 'cs' ? 'en' : 'cs')} style={{ minHeight: 36, padding: '0 8px', fontSize: 12 }} aria-label="Language">{getLang() === 'cs' ? 'EN' : 'CZ'}</button><button className="hbtn" onClick={() => setAddOpen(true)} style={{ minHeight: 36, padding: '0 10px', borderColor: '#C2410C', color: '#FDBA8C' }} aria-label={tr('Přidat závod')}>+ {getLang() === 'en' ? 'Race' : 'Závod'}</button>
+        {!user ? <button className="hbtn" onClick={() => openAuth('login')} style={{ minHeight: 36 }}>{tr('Přihlásit')}</button>
+          : <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span className="avatar" aria-hidden="true" style={{ width: 30, height: 30, fontSize: 12 }}>{initials}</span><button className="hbtn" onClick={doLogout} style={{ minHeight: 34, fontSize: 13, padding: '0 10px' }}>{tr('Odhlásit')}</button></span>}</span>
       </header>
       </>) : (<>
       <header style={{ background: '#15171A', color: '#FFFFFF' }}>
@@ -433,28 +464,28 @@ export default function App() {
             <div style={{ width: 36, height: 36, borderRadius: 9, background: '#C2410C', display: 'grid', placeItems: 'center', color: '#fff' }}>
               <Icon size={20} w={2.2} d={<><path d="M4 21V4" /><path d="M4 4h12l-2 4 2 4H4" /></>} />
             </div>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22 }}>Startovka</span>
-            <span style={{ fontSize: 13, color: '#B8BCC2' }}>kalendář běžeckých závodů</span>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22 }}>{tr('Startovka')}</span>
+            <span style={{ fontSize: 13, color: '#B8BCC2' }}>{tr('kalendář běžeckých závodů')}</span>
           </div>
-          <nav aria-label="Hlavní" style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 14, flexWrap: 'wrap' }}>
-            <a href="#" onClick={(e) => { e.preventDefault(); setS((p) => ({ ...p, view: 'seznam' })) }} style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 600 }}>Závody</a>
-            <a href="#zdroje" style={{ color: '#B8BCC2', textDecoration: 'none' }}>Zdroje dat</a>
+          <nav aria-label={tr('Hlavní')} style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 14, flexWrap: 'wrap' }}>
+            <a href="/" onClick={(e) => { e.preventDefault(); go('/'); setS((p) => ({ ...p, view: 'seznam' })) }} style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 600 }}>{tr('Závody')}</a>
+            <a href="/o-projektu/" onClick={(e) => { e.preventDefault(); go('/o-projektu/') }} style={{ color: '#B8BCC2', textDecoration: 'none' }}>{tr('Zdroje dat')}</a>
             <span style={{ display: 'inline-flex', border: '1px solid #3A3E45', borderRadius: 8, overflow: 'hidden' }}>
-              <button aria-pressed="true" style={segBtn(true)}>CZ</button>
-              <button aria-pressed="false" style={segBtn(false)} title="Anglická verze se připravuje">EN</button>
+              <button aria-pressed={getLang() === 'cs'} style={segBtn(getLang() === 'cs')} onClick={() => switchLang('cs')}>CZ</button>
+              <button aria-pressed={getLang() === 'en'} style={segBtn(getLang() === 'en')} onClick={() => switchLang('en')} title="English">EN</button>
             </span>
-            <button className="hbtn" onClick={() => setAddOpen(true)} style={{ borderColor: '#C2410C', color: '#FDBA8C' }}>+ Přidat závod</button>
+            <button className="hbtn" onClick={() => setAddOpen(true)} style={{ borderColor: '#C2410C', color: '#FDBA8C' }}>+ {tr('Přidat závod')}</button>
             {!user ? (
               <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button className="hbtn" onClick={() => openAuth('login')}>Přihlásit</button>
-                <button className="btn" onClick={() => openAuth('register')} style={{ minHeight: 38 }}>Registrace</button>
+                <button className="hbtn" onClick={() => openAuth('login')}>{tr('Přihlásit')}</button>
+                <button className="btn" onClick={() => openAuth('register')} style={{ minHeight: 38 }}>{tr('Registrace')}</button>
               </span>
             ) : (
               <span style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <button className="hbtn" onClick={showMuj}>♥ Můj kalendář ({saved.length})</button>
+                <button className="hbtn" onClick={showMuj}>{tr('♥ Můj kalendář')} ({saved.length})</button>
                 <span className="avatar" aria-hidden="true">{initials}</span>
                 <span className="uemail" style={{ fontSize: 13, color: '#C9CCD1', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</span>
-                <button className="hbtn" onClick={doLogout} style={{ minHeight: 34, fontSize: 13 }}>Odhlásit</button>
+                <button className="hbtn" onClick={doLogout} style={{ minHeight: 34, fontSize: 13 }}>{tr('Odhlásit')}</button>
               </span>
             )}
           </nav>
@@ -463,27 +494,31 @@ export default function App() {
 
       <section style={{ background: '#15171A', color: '#FFFFFF', padding: '8px 0 30px' }}>
         <div style={{ maxWidth: 1360, margin: '0 auto', padding: '0 24px' }}>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4.4vw, 50px)', lineHeight: 1.05, margin: '10px 0 8px', letterSpacing: '-0.02em' }}>Najdi svůj další start.</h1>
-          <p style={{ margin: 0, color: '#C9CCD1', fontSize: 16, maxWidth: '70ch' }}>{RACES.filter((r) => !isPast(r)).length} závodů sezóny 2026/27 z termínovky ČAS, registrací stopnito.cz, seriálů RunCzech a Běhej lesy a termínovek running.life, behej.com, SvětBěhu a BezvaBĚH – ze všech 14 krajů, bez duplicit.</p>
+          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4.4vw, 50px)', lineHeight: 1.05, margin: '10px 0 8px', letterSpacing: '-0.02em' }}>{tr(QUOTE[0])}</h1>
+          <p style={{ margin: 0, color: '#C9CCD1', fontSize: 17, maxWidth: '62ch' }}>{tr(QUOTE[1])}</p>
         </div>
       </section>
       </>)}
 
       <div style={{ maxWidth: 1360, margin: '0 auto', padding: '26px 24px 64px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        {!isMuj && !mob && filterPanel}
+        {!isMuj && !mob && !routed && filterPanel}
 
         <main style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: mob ? 12 : 18 }}>
+          {routed ? (pageKind ? <StaticPage kind={pageKind} go={go} onContact={() => setReport('msg')} />
+            : routeRace ? <RaceDetail r={routeRace} go={go} nearby={nearbyOf(routeRace)}><RaceCard key={routeRace.id} r={routeRace} km={kmOf(routeRace)} loc={home.name} saved={!!user && saved.includes(routeRace.id)} onSave={() => toggleSave(routeRace.id)} mob={mob} initOpen {...cardProps(routeRace)} /></RaceDetail>
+            : <div style={{ background: '#FFFFFF', border: '1px dashed #B9B5A8', borderRadius: 14, padding: 36, textAlign: 'center' }}><p style={{ margin: '0 0 14px', fontSize: 17 }}>{ver ? tr('Tenhle závod jsme nenašli – možná byl smazán.') : tr('Načítám…')}</p><button className="btn" onClick={() => go('/')}>{tr('Zpět na závody')}</button></div>
+          ) : (<>
           {mob && !isMuj && (
             <div className="mtop">
               <div className="msbar">
-                <label htmlFor="mq" className="sr">Hledat závod nebo místo</label>
-                <input id="mq" type="search" value={s.q} onChange={(e) => set({ q: e.target.value })} placeholder="Hledat závod nebo místo" />
-                <button className={fCount ? 'mfilt on' : 'mfilt'} onClick={() => setSheet(true)} aria-label={'Filtry' + (fCount ? ', aktivních ' + fCount : '')}>
-                  <Icon size={18} d={<path d="M4 6h16M7 12h10M10 18h4" />} />Filtry{fCount ? <span className="fbadge">{fCount}</span> : null}
+                <label htmlFor="mq" className="sr">{tr('Hledat závod nebo místo')}</label>
+                <input id="mq" type="search" value={s.q} onChange={(e) => set({ q: e.target.value })} placeholder={tr('Hledat závod nebo místo')} />
+                <button className={fCount ? 'mfilt on' : 'mfilt'} onClick={() => setSheet(true)} aria-label={'Filtry' + (fCount ? tr(', aktivních ') + fCount : '')}>
+                  <Icon size={18} d={<path d="M4 6h16M7 12h10M10 18h4" />} />{tr('Filtry')}{fCount ? <span className="fbadge">{fCount}</span> : null}
                 </button>
               </div>
-              <div className="mquick" role="group" aria-label="Rychlý výběr">
-                {QUICK.filter((q) => !(isRes && q.l === 'Tento víkend')).map((q) => <button key={q.l} className={q.on ? 'qc on' : 'qc'} aria-pressed={q.on} onClick={q.f}>{q.l}</button>)}
+              <div className="mquick" role="group" aria-label={tr('Rychlý výběr')}>
+                {QUICK.filter((q) => !(isRes && q.l === tr('Tento víkend'))).map((q) => <button key={q.l} className={q.on ? 'qc on' : 'qc'} aria-pressed={q.on} onClick={q.f}>{q.l}</button>)}
               </div>
             </div>
           )}
@@ -494,28 +529,28 @@ export default function App() {
                 <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, fontWeight: 700, whiteSpace: 'nowrap' }}>{countLabel}</span>
                 {!isMuj && <button className="mloc" onClick={openLoc}>od: {home.short || home.name}</button>}
               </div>
-              {!isMuj && <select aria-label="Řadit" value={s.sort} onChange={(e) => setS((p) => ({ ...p, sort: e.target.value }))} style={{ minHeight: 38, fontSize: 14, padding: '0 8px' }}>
-                <option value="datum">Podle data</option><option value="blizko">Nejblíž</option><option value="kratke">Nejkratší</option>
+              {!isMuj && <select aria-label={tr('Řadit')} value={s.sort} onChange={(e) => setS((p) => ({ ...p, sort: e.target.value }))} style={{ minHeight: 38, fontSize: 14, padding: '0 8px' }}>
+                <option value="datum">{tr('Podle data')}</option><option value="blizko">{tr('Nejblíž')}</option><option value="kratke">{tr('Nejkratší')}</option>
               </select>}
             </div>
           ) : (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 700 }}>{countLabel}</span>
-              {!isMuj && <span style={{ fontSize: mob ? 13 : 14, color: '#5A5F66' }}>{isRes ? 'za posledních 5 týdnů · výsledky z archivu ČAS a časomír' : mob ? 'od: ' + home.name : ((s.radius ? 'do ' + s.radius + ' km od: ' + home.name : 'v celé ČR · vzdálenosti od: ' + home.name) + ' · ' + nReg + ' s online přihláškou')}</span>}
+              {!isMuj && <span style={{ fontSize: mob ? 13 : 14, color: '#5A5F66' }}>{isRes ? tr('za posledních 5 týdnů · výsledky z archivu ČAS a časomír') : mob ? tr('od: ') + home.name : ((s.radius ? 'do ' + s.radius + ' km od: ' + home.name : tr('v celé ČR · vzdálenosti od: ') + home.name) + ' · ' + nReg + tr(' s online přihláškou'))}</span>}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               {!isMuj && <>
-                <label htmlFor="sort" className={mob ? 'sr' : ''} style={{ fontSize: 13, color: '#5A5F66' }}>Řadit</label>
+                <label htmlFor="sort" className={mob ? 'sr' : ''} style={{ fontSize: 13, color: '#5A5F66' }}>{tr('Řadit')}</label>
                 <select id="sort" value={s.sort} onChange={(e) => setS((p) => ({ ...p, sort: e.target.value }))} style={{ minHeight: mob ? 38 : 40, fontSize: mob ? 14 : 15 }}>
-                  <option value="datum">Podle data</option><option value="blizko">Nejblíž ode mě</option><option value="kratke">Nejkratší trať</option>
+                  <option value="datum">{tr('Podle data')}</option><option value="blizko">{tr('Nejblíž ode mě')}</option><option value="kratke">{tr('Nejkratší trať')}</option>
                 </select>
               </>}
               {!mob && <span style={{ display: 'inline-flex', background: '#ECEAE3', borderRadius: 10, padding: 3 }}>
-                <button className={s.view === 'seznam' ? 'seg on' : 'seg'} aria-pressed={s.view === 'seznam'} onClick={() => setS((p) => ({ ...p, view: 'seznam' }))}>Seznam</button>
-                <button className={isRes ? 'seg on' : 'seg'} aria-pressed={isRes} onClick={() => setS((p) => ({ ...p, view: 'vysledky', limit: PAGE }))}>Výsledky</button>
-                <button className={s.view === 'mapa' ? 'seg on' : 'seg'} aria-pressed={s.view === 'mapa'} onClick={() => setS((p) => ({ ...p, view: 'mapa' }))}>Mapa</button>
-                <button className={isMuj ? 'seg on' : 'seg'} aria-pressed={isMuj} onClick={showMuj}>♥ Můj kalendář</button>
+                <button className={s.view === 'seznam' ? 'seg on' : 'seg'} aria-pressed={s.view === 'seznam'} onClick={() => setS((p) => ({ ...p, view: 'seznam' }))}>{tr('Seznam')}</button>
+                <button className={isRes ? 'seg on' : 'seg'} aria-pressed={isRes} onClick={() => setS((p) => ({ ...p, view: 'vysledky', limit: PAGE }))}>{tr('Výsledky')}</button>
+                <button className={s.view === 'mapa' ? 'seg on' : 'seg'} aria-pressed={s.view === 'mapa'} onClick={() => setS((p) => ({ ...p, view: 'mapa' }))}>{tr('Mapa')}</button>
+                <button className={isMuj ? 'seg on' : 'seg'} aria-pressed={isMuj} onClick={showMuj}>{tr('♥ Můj kalendář')}</button>
               </span>}
             </div>
           </div>
@@ -530,11 +565,11 @@ export default function App() {
 
           {!isMuj && !hasPref && (
             <div className="locbox">
-              <p><b>Odkud vyrážíš?</b> Vzdálenosti teď počítám od Turnova. Nastav si svoje místo – zapamatuju si ho.</p>
+              <p><b>{tr('Odkud vyrážíš?')}</b> {tr('Vzdálenosti teď počítám od Turnova. Nastav si svoje místo – zapamatuju si ho.')}</p>
               <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button className="geobtn" onClick={useMyLocation}>📍 Použít moji polohu</button>
-                <button className="ghost" style={{ minHeight: 44 }} onClick={() => { if (mob) openLoc(); else { const el = document.getElementById('loc'); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); el.select() } } }}>Zadat město</button>
-                <button className="linkbtn" style={{ color: '#5A5F66', fontWeight: 500 }} onClick={() => setHasPref(true)}>Turnov mi vyhovuje</button>
+                <button className="geobtn" onClick={useMyLocation}>{tr('📍 Použít moji polohu')}</button>
+                <button className="ghost" style={{ minHeight: 44 }} onClick={() => { if (mob) openLoc(); else { const el = document.getElementById('loc'); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); el.select() } } }}>{tr('Zadat město')}</button>
+                <button className="linkbtn" style={{ color: '#5A5F66', fontWeight: 500 }} onClick={() => setHasPref(true)}>{tr('Turnov mi vyhovuje')}</button>
               </span>
               {geoMsg && <p style={{ flexBasis: '100%', color: '#7C2D12' }}>{geoMsg}</p>}
             </div>
@@ -542,7 +577,7 @@ export default function App() {
 
           {isRes && (
             <div className="resinfo">
-              <b>Výsledky závodů.</b> Po doběhnutí se každý závod z kalendáře přesune sem a tlačítko vede rovnou na výsledky – u časomíry nebo v archivu Českého běhu. Filtry místa, vzdálenosti a typu fungují stejně jako v kalendáři.
+              <b>{tr('Výsledky závodů.')}</b> Po doběhnutí se každý závod z kalendáře přesune sem a tlačítko vede rovnou na výsledky – u časomíry nebo v archivu Českého běhu. Filtry místa, vzdálenosti a typu fungují stejně jako v kalendáři.
             </div>
           )}
 
@@ -551,23 +586,23 @@ export default function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <span className="avatar" aria-hidden="true" style={{ width: 44, height: 44, fontSize: 15 }}>{initials}</span>
                 <div>
-                  <p style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 700 }}>Můj kalendář</p>
+                  <p style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 700 }}>{tr('Můj kalendář')}</p>
                   <p style={{ margin: '4px 0 0', fontSize: 14, color: '#C9CCD1' }}>{mujSummary}</p>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button className="act" disabled={!n} onClick={() => downloadIcs(res, 'muj-kalendar-zavodu.ics', 'Moje závody – Startovka')}>Stáhnout do kalendáře (.ics)</button>
-                <button className="act" onClick={() => setS((p) => ({ ...p, view: 'seznam' }))}>Zpět na všechny závody</button>
+                <button className="act" disabled={!n} onClick={() => downloadIcs(res, 'muj-kalendar-zavodu.ics', tr('Moje závody – Startovka'))}>{tr('Stáhnout do kalendáře (.ics)')}</button>
+                <button className="act" onClick={() => setS((p) => ({ ...p, view: 'seznam' }))}>{tr('Zpět na všechny závody')}</button>
               </div>
-              <p style={{ margin: 0, flexBasis: '100%', fontSize: 12.5, color: '#9AA0A8' }}>Soubor .ics otevřeš v Google, Apple i Outlook kalendáři. Automatický odběr se změnami termínů přidáme v další verzi.</p>
+              <p style={{ margin: 0, flexBasis: '100%', fontSize: 12.5, color: '#9AA0A8' }}>{tr('Soubor .ics otevřeš v Google, Apple i Outlook kalendáři. Automatický odběr se změnami termínů přidáme v další verzi.')}</p>
             </div>
           )}
 
           {isMuj && n === 0 && (
             <div style={{ background: '#FFFFFF', border: '1px dashed #B9B5A8', borderRadius: 14, padding: 36, textAlign: 'center' }}>
-              <p style={{ margin: '0 0 6px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>Zatím nemáš uložené žádné závody</p>
-              <p style={{ margin: '0 0 16px', color: '#5A5F66' }}>U závodu klikni na „♡ Uložit závod“ a objeví se tady.</p>
-              <button className="btn" onClick={() => setS((p) => ({ ...p, view: 'seznam' }))}>Procházet závody</button>
+              <p style={{ margin: '0 0 6px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>{tr('Zatím nemáš uložené žádné závody')}</p>
+              <p style={{ margin: '0 0 16px', color: '#5A5F66' }}>{tr('U závodu klikni na „♡ Uložit závod“ a objeví se tady.')}</p>
+              <button className="btn" onClick={() => setS((p) => ({ ...p, view: 'seznam' }))}>{tr('Procházet závody')}</button>
             </div>
           )}
 
@@ -578,15 +613,15 @@ export default function App() {
                 const head = isRes && (i === 0 || weekLabel(shown[i - 1].from).key !== wl.key)
                 return <div key={r.id} style={{ display: 'contents' }}>
                   {head && <h2 className="wkhead">{wl.label}<span>{res.filter((x) => weekLabel(x.from).key === wl.key).length}</span></h2>}
-                  <RaceCard r={r} km={kmOf(r)} loc={home.name} saved={!!user && saved.includes(r.id)} onSave={() => toggleSave(r.id)} mob={mob} />
+                  <RaceCard r={r} km={kmOf(r)} loc={home.name} saved={!!user && saved.includes(r.id)} onSave={() => toggleSave(r.id)} mob={mob} {...cardProps(r)} />
                 </div>
               })}
               {!isMuj && n > s.limit && <button className="ghost" onClick={() => setS((p) => ({ ...p, limit: p.limit + PAGE }))} style={{ alignSelf: 'center', minHeight: 44, padding: '0 22px' }}>Zobrazit další ({n - s.limit})</button>}
               {!isMuj && n === 0 && (
                 <div style={{ background: '#FFFFFF', border: '1px dashed #B9B5A8', borderRadius: 14, padding: 36, textAlign: 'center' }}>
-                  <p style={{ margin: '0 0 6px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>{isRes ? 'Žádné doběhnuté závody pro tyto filtry' : 'Žádný závod neodpovídá filtrům'}</p>
-                  <p style={{ margin: '0 0 16px', color: '#5A5F66' }}>Zkus rozšířit vzdálenost nebo ubrat některý filtr.</p>
-                  <button className="btn" onClick={reset}>Zrušit filtry</button>
+                  <p style={{ margin: '0 0 6px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>{isRes ? tr('Žádné doběhnuté závody pro tyto filtry') : tr('Žádný závod neodpovídá filtrům')}</p>
+                  <p style={{ margin: '0 0 16px', color: '#5A5F66' }}>{tr('Zkus rozšířit vzdálenost nebo ubrat některý filtr.')}</p>
+                  <button className="btn" onClick={reset}>{tr('Zrušit filtry')}</button>
                 </div>
               )}
             </div>
@@ -595,83 +630,40 @@ export default function App() {
           {s.view === 'mapa' && !isMuj && (
             <>
               <MapView races={res} home={home} height={mob ? '62vh' : 600} onOpen={(id) => { const r = RACES.find((x) => x.id === id); if (r) { setS((p) => ({ ...p, view: 'seznam', q: r.name, limit: PAGE })); window.scrollTo(0, 0) } }} />
-              <p style={{ margin: 0, fontSize: 12.5, color: '#5A5F66' }}>Body jsou podle obce (střed), ne přesné místo startu. Klepnutím na název závodu ho otevřeš v seznamu.</p>
+              <p style={{ margin: 0, fontSize: 12.5, color: '#5A5F66' }}>{tr('Body jsou podle obce (střed), ne přesné místo startu. Klepnutím na název závodu ho otevřeš v seznamu.')}</p>
             </>
           )}
 
-          {mob ? (
-            <details id="zdroje" className="msrc"><summary>Zdroje dat a registrační platformy</summary>
-          <section aria-label="Zdroje dat" style={{ background: '#FFFFFF', border: '1px solid #E2E0D8', borderRadius: 14, padding: '18px 20px', marginTop: 10 }}>
-            
-            <p style={{ margin: '0 0 14px', fontSize: 14, color: '#4A4F56', maxWidth: '80ch' }}>Kalendář skládá závody z oficiálních termínovek, seriálů a registračních systémů. U každého závodu si pamatujeme, odkud termín máme, a vedeme na platformu, kde se dá přihlásit, najít startovka a výsledky.</p>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ptab">
-                <thead><tr><th>Platforma</th><th>Co nabízí</th><th>V kalendáři</th><th>Stav</th></tr></thead>
-                <tbody>
-                  <tr><td><a href="https://ceskybeh.cz/terminovka/" target="_blank" rel="noopener">Český běh – termínovka ČAS</a></td><td>Oficiální termínovka ČAS: čas startu, místo, startovné, archiv výsledků.</td><td>{cntP('cb')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://www.stopnito.cz/zavody" target="_blank" rel="noopener">stopnito.cz</a></td><td>Registrace, seznam přihlášených, výsledky, GPS tracking.</td><td>{cntP('sn')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://www.runczech.com" target="_blank" rel="noopener">RunCzech</a></td><td>Vlastní registrace a výsledky seriálu.</td><td>{cntP('rc')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://behejlesy.cz" target="_blank" rel="noopener">Běhej lesy</a></td><td>Vlastní registrace a výsledky seriálu.</td><td>{cntP('bl')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://zavody.4timing.cz/" target="_blank" rel="noopener">4timing.cz</a></td><td>Časomíra: připravované závody, přihlášky, výsledky.</td><td>—</td><td><span className="st st-next">Další krok</span></td></tr>
-                  <tr><td><a href="https://www.nazavody.cz" target="_blank" rel="noopener">naZávody.cz</a></td><td>Registrační systém s veřejným API.</td><td>—</td><td><span className="st st-next">Další krok – API</span></td></tr>
-                  <tr><td><a href="https://www.behej.com/terminovka" target="_blank" rel="noopener">behej.com</a></td><td>Termínovka s mapou; u závodů web pořadatele a čas startu.</td><td>{cntP('bj')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://www.svetbehu.cz/terminovka/" target="_blank" rel="noopener">SvětBěhu.cz</a></td><td>Termínovka časopisu Svět běhu.</td><td>{cntP('sb')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://www.bezvabeh.cz/terminovka" target="_blank" rel="noopener">BezvaBĚH.cz</a></td><td>Termínovka a výsledky.</td><td>{cntP('bz')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://running.life/terminovka/cesko" target="_blank" rel="noopener">running.life</a></td><td>Celostátní termínovka – doplňuje závody ze všech krajů. Údaje ověřuj u pořadatele.</td><td>{cntP('rl')} závodů</td><td><span className="st st-low">Doplňkový</span></td></tr>
-                  <tr><td><a href="https://gotrail.run/trailove-behy/cesko/liberecky-kraj" target="_blank" rel="noopener">gotrail.run</a></td><td>Agregátor trailů – jen pro objevování.</td><td>{cntP('gt')} závodů</td><td><span className="st st-low">Doplňkový</span></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-            </details>
-          ) : (
-          <section id="zdroje" aria-label="Zdroje dat" style={{ background: '#FFFFFF', border: '1px solid #E2E0D8', borderRadius: 14, padding: '18px 20px', marginTop: 10 }}>
-            <h2 style={{ margin: '0 0 4px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 22 }}>Zdroje dat a registrační platformy</h2>
-            <p style={{ margin: '0 0 14px', fontSize: 14, color: '#4A4F56', maxWidth: '80ch' }}>Kalendář skládá závody z oficiálních termínovek, seriálů a registračních systémů. U každého závodu si pamatujeme, odkud termín máme, a vedeme na platformu, kde se dá přihlásit, najít startovka a výsledky.</p>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ptab">
-                <thead><tr><th>Platforma</th><th>Co nabízí</th><th>V kalendáři</th><th>Stav</th></tr></thead>
-                <tbody>
-                  <tr><td><a href="https://ceskybeh.cz/terminovka/" target="_blank" rel="noopener">Český běh – termínovka ČAS</a></td><td>Oficiální termínovka ČAS: čas startu, místo, startovné, archiv výsledků.</td><td>{cntP('cb')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://www.stopnito.cz/zavody" target="_blank" rel="noopener">stopnito.cz</a></td><td>Registrace, seznam přihlášených, výsledky, GPS tracking.</td><td>{cntP('sn')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://www.runczech.com" target="_blank" rel="noopener">RunCzech</a></td><td>Vlastní registrace a výsledky seriálu.</td><td>{cntP('rc')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://behejlesy.cz" target="_blank" rel="noopener">Běhej lesy</a></td><td>Vlastní registrace a výsledky seriálu.</td><td>{cntP('bl')} závodů</td><td><span className="st st-on">Napojeno</span></td></tr>
-                  <tr><td><a href="https://zavody.4timing.cz/" target="_blank" rel="noopener">4timing.cz</a></td><td>Časomíra: připravované závody, přihlášky, výsledky.</td><td>—</td><td><span className="st st-next">Další krok</span></td></tr>
-                  <tr><td><a href="https://www.nazavody.cz" target="_blank" rel="noopener">naZávody.cz</a></td><td>Registrační systém s veřejným API.</td><td>—</td><td><span className="st st-next">Další krok – API</span></td></tr>
-                  <tr><td><a href="https://running.life/terminovka/cesko" target="_blank" rel="noopener">running.life</a></td><td>Celostátní termínovka – doplňuje závody ze všech krajů. Údaje ověřuj u pořadatele.</td><td>{cntP('rl')} závodů</td><td><span className="st st-low">Doplňkový</span></td></tr>
-                  <tr><td><a href="https://gotrail.run/trailove-behy/cesko/liberecky-kraj" target="_blank" rel="noopener">gotrail.run</a></td><td>Agregátor trailů – jen pro objevování.</td><td>{cntP('gt')} závodů</td><td><span className="st st-low">Doplňkový</span></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-          )}
-          <p style={{ margin: '8px 0 0', fontSize: 12.5, color: '#5A5F66', lineHeight: 1.6 }}>Stav dat k 17. 11. 2026. Souřadnice jsou zatím střed obce (odhad). Vzdálenost a čas cesty jsou orientační, počítané z Turnova. Odkazy na stopnito.cz vedou na přehled závodů.</p>
+          </>)}
+          <Footer go={go} onContact={() => setReport('msg')} mob={mob} />
         </main>
       </div>
 
       {mob && (
-        <nav className="mnav" aria-label="Zobrazení">
-          <button className={s.view === 'seznam' ? 'on' : ''} onClick={() => goView('seznam')}><Icon size={20} d={<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />} />Závody</button>
-          <button className={isRes ? 'on' : ''} onClick={() => goView('vysledky')}><Icon size={20} d={<><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z" /><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" /></>} />Výsledky</button>
-          <button className={s.view === 'mapa' ? 'on' : ''} onClick={() => goView('mapa')}><Icon size={20} d={<><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z" /><path d="M9 4v14M15 6v14" /></>} />Mapa</button>
-          <button className={isMuj ? 'on' : ''} onClick={() => goView('muj')}><Icon size={20} d={<path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" />} />Můj kalendář{user && saved.length ? ' (' + saved.length + ')' : ''}</button>
+        <nav className="mnav" aria-label={tr('Zobrazení')}>
+          <button className={s.view === 'seznam' ? 'on' : ''} onClick={() => goView('seznam')}><Icon size={20} d={<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />} />{tr('Závody')}</button>
+          <button className={isRes ? 'on' : ''} onClick={() => goView('vysledky')}><Icon size={20} d={<><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z" /><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" /></>} />{tr('Výsledky')}</button>
+          <button className={s.view === 'mapa' ? 'on' : ''} onClick={() => goView('mapa')}><Icon size={20} d={<><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z" /><path d="M9 4v14M15 6v14" /></>} />{tr('Mapa')}</button>
+          <button className={isMuj ? 'on' : ''} onClick={() => goView('muj')}><Icon size={20} d={<path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" />} />{tr('Můj kalendář')}{user && saved.length ? ' (' + saved.length + ')' : ''}</button>
         </nav>
       )}
 
       {mob && sheet && (
         <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle">
           <div className="shead">
-            <h2 id="shTitle">Filtry</h2>
-            <button className="xbtn" onClick={() => setSheet(false)} aria-label="Zavřít filtry"><Icon size={16} w={2.4} d={<path d="M6 6l12 12M18 6L6 18" />} /></button>
+            <h2 id="shTitle">{tr('Filtry')}</h2>
+            <button className="xbtn" onClick={() => setSheet(false)} aria-label={tr('Zavřít filtry')}><Icon size={16} w={2.4} d={<path d="M6 6l12 12M18 6L6 18" />} /></button>
           </div>
           <div className="sbody">{filterPanel}</div>
           <div className="sfoot">
-            <button className="ghost" onClick={reset} disabled={!active.length}>Zrušit vše</button>
-            <button className="btn" onClick={() => { setSheet(false); window.scrollTo(0, 0) }}>Zobrazit {countLabel}</button>
+            <button className="ghost" onClick={reset} disabled={!active.length}>{tr('Zrušit vše')}</button>
+            <button className="btn" onClick={() => { setSheet(false); window.scrollTo(0, 0) }}>{tr('Zobrazit')} {countLabel}</button>
           </div>
         </div>
       )}
 
+      {report && <ReportModal race={report === 'msg' ? null : report} onClose={() => setReport(null)} />}
+      {toastMsg && <div role="status" style={{ position: 'fixed', left: '50%', bottom: mob ? 84 : 28, transform: 'translateX(-50%)', background: '#15171A', color: '#fff', padding: '10px 16px', borderRadius: 10, fontSize: 14, zIndex: 90, boxShadow: '0 8px 24px rgba(0,0,0,.25)' }}>{toastMsg}</div>}
       {addOpen && <AddRace onClose={() => setAddOpen(false)} onAdded={(r) => addRaces([r])} placeNames={PLACE_NAMES} cities={CITIES} user={user} />}
 
       {auth.open && (
@@ -679,22 +671,22 @@ export default function App() {
           <div role="dialog" aria-modal="true" aria-labelledby="authTitle" style={{ background: '#FFFFFF', borderRadius: 16, maxWidth: 420, width: '100%', padding: 24, display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '92vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,.25)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
-                <h2 id="authTitle" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 24 }}>{isReg ? 'Vytvořit účet' : 'Přihlásit se'}</h2>
-                <p style={{ margin: '6px 0 0', fontSize: 14, color: '#4A4F56', lineHeight: 1.5 }}>{auth.pending ? 'Pro uložení závodu do tvého kalendáře se přihlas nebo si založ účet.' : isReg ? 'Ukládej si závody do vlastního kalendáře.' : 'Vítej zpátky. Tvůj kalendář závodů na tebe čeká.'}</p>
+                <h2 id="authTitle" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 24 }}>{isReg ? tr('Vytvořit účet') : tr('Přihlásit se')}</h2>
+                <p style={{ margin: '6px 0 0', fontSize: 14, color: '#4A4F56', lineHeight: 1.5 }}>{auth.pending ? tr('Pro uložení závodu do tvého kalendáře se přihlas nebo si založ účet.') : isReg ? tr('Ukládej si závody do vlastního kalendáře.') : tr('Vítej zpátky. Tvůj kalendář závodů na tebe čeká.')}</p>
               </div>
-              <button className="xbtn" onClick={closeAuth} aria-label="Zavřít"><Icon size={16} w={2.4} d={<path d="M6 6l12 12M18 6L6 18" />} /></button>
+              <button className="xbtn" onClick={closeAuth} aria-label={tr('Zavřít')}><Icon size={16} w={2.4} d={<path d="M6 6l12 12M18 6L6 18" />} /></button>
             </div>
-            {GOOGLE && <button className="gbtn" onClick={doGoogle}><Icon size={18} d={<><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></>} />Pokračovat přes Google</button>}
-            {GOOGLE && <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#5A5F66', fontSize: 13 }}><span style={{ flex: 1, height: 1, background: '#E2E0D8' }} />nebo e-mailem<span style={{ flex: 1, height: 1, background: '#E2E0D8' }} /></div>}
-            {isReg && <div className="fld"><label htmlFor="fname">Jméno</label><input id="fname" type="text" value={auth.name} onChange={(e) => setAuth((a) => ({ ...a, name: e.target.value }))} placeholder="Jak ti máme říkat" autoComplete="name" /></div>}
-            <div className="fld"><label htmlFor="femail">E-mail</label><input id="femail" type="email" value={auth.email} onChange={(e) => setAuth((a) => ({ ...a, email: e.target.value }))} placeholder="jmeno@email.cz" autoComplete="email" /></div>
-            <div className="fld"><label htmlFor="fpass">Heslo</label><input id="fpass" type="password" value={auth.pass} onChange={(e) => setAuth((a) => ({ ...a, pass: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') doEmail() }} placeholder="alespoň 8 znaků" autoComplete={isReg ? 'new-password' : 'current-password'} style={{ font: '500 15px Inter, sans-serif', border: '1px solid #D9D6CC', borderRadius: 10, minHeight: 44, padding: '0 12px' }} /></div>
+            {GOOGLE && <button className="gbtn" onClick={doGoogle}><Icon size={18} d={<><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></>} />{tr('Pokračovat přes Google')}</button>}
+            {GOOGLE && <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#5A5F66', fontSize: 13 }}><span style={{ flex: 1, height: 1, background: '#E2E0D8' }} />{tr('nebo e-mailem')}<span style={{ flex: 1, height: 1, background: '#E2E0D8' }} /></div>}
+            {isReg && <div className="fld"><label htmlFor="fname">{tr('Jméno')}</label><input id="fname" type="text" value={auth.name} onChange={(e) => setAuth((a) => ({ ...a, name: e.target.value }))} placeholder={tr('Jak ti máme říkat')} autoComplete="name" /></div>}
+            <div className="fld"><label htmlFor="femail">{tr('E-mail')}</label><input id="femail" type="email" value={auth.email} onChange={(e) => setAuth((a) => ({ ...a, email: e.target.value }))} placeholder={tr('jmeno@email.cz')} autoComplete="email" /></div>
+            <div className="fld"><label htmlFor="fpass">{tr('Heslo')}</label><input id="fpass" type="password" value={auth.pass} onChange={(e) => setAuth((a) => ({ ...a, pass: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') doEmail() }} placeholder={tr('alespoň 8 znaků')} autoComplete={isReg ? 'new-password' : 'current-password'} style={{ font: '500 15px Inter, sans-serif', border: '1px solid #D9D6CC', borderRadius: 10, minHeight: 44, padding: '0 12px' }} /></div>
             {auth.error && <p role="alert" style={{ margin: 0, fontSize: 14, color: '#B42318' }}>{auth.error}</p>}
             {auth.info && <p role="status" style={{ margin: 0, fontSize: 14, color: '#24502F' }}>{auth.info}</p>}
-            <button className="btn" disabled={auth.busy} onClick={doEmail} style={{ width: '100%', minHeight: 46, fontSize: 15 }}>{auth.busy ? 'Moment…' : isReg ? 'Vytvořit účet' : 'Přihlásit se'}</button>
-            {!isReg && <button className="linkbtn" onClick={doReset} style={{ alignSelf: 'center', fontWeight: 500, fontSize: 13 }}>Zapomenuté heslo? Pošleme odkaz na e-mail</button>}
-            <p style={{ margin: 0, fontSize: 14, textAlign: 'center', color: '#4A4F56' }}>{isReg ? 'Už máš účet?' : 'Ještě nemáš účet?'} <button className="linkbtn" onClick={() => setAuth((a) => ({ ...a, mode: isReg ? 'login' : 'register', error: '', info: '' }))}>{isReg ? 'Přihlas se' : 'Zaregistruj se'}</button></p>
-            {DEMO && <p style={{ margin: 0, fontSize: 12, color: '#5A5F66', lineHeight: 1.5, borderTop: '1px solid #EEECE5', paddingTop: 12 }}>Testovací verze: přihlášení zatím běží jen v tomto prohlížeči, nic se neodesílá.</p>}
+            <button className="btn" disabled={auth.busy} onClick={doEmail} style={{ width: '100%', minHeight: 46, fontSize: 15 }}>{auth.busy ? 'Moment…' : isReg ? tr('Vytvořit účet') : tr('Přihlásit se')}</button>
+            {!isReg && <button className="linkbtn" onClick={doReset} style={{ alignSelf: 'center', fontWeight: 500, fontSize: 13 }}>{tr('Zapomenuté heslo? Pošleme odkaz na e-mail')}</button>}
+            <p style={{ margin: 0, fontSize: 14, textAlign: 'center', color: '#4A4F56' }}>{isReg ? tr('Už máš účet?') : tr('Ještě nemáš účet?')} <button className="linkbtn" onClick={() => setAuth((a) => ({ ...a, mode: isReg ? 'login' : 'register', error: '', info: '' }))}>{isReg ? tr('Přihlas se') : 'Zaregistruj se'}</button></p>
+            {DEMO && <p style={{ margin: 0, fontSize: 12, color: '#5A5F66', lineHeight: 1.5, borderTop: '1px solid #EEECE5', paddingTop: 12 }}>{tr('Testovací verze: přihlášení zatím běží jen v tomto prohlížeči, nic se neodesílá.')}</p>}
           </div>
         </div>
       )}
@@ -702,18 +694,20 @@ export default function App() {
   )
 }
 
-function RaceCard({ r, km, loc, saved, onSave, mob }) {
-  const [open, setOpen] = useState(false)
+function RaceCard({ r, km, loc, saved, onSave, mob, onOpen, onShare, onReport, initOpen = false }) {
+  const [open, setOpen] = useState(initOpen)
+  const nameLink = (st) => <a href={'/zavod/' + r.id + '/'} onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpen && onOpen() }} style={{ color: 'inherit', textDecoration: 'none', ...st }}>{r.name}</a>
+  const warn = r.reported >= 2 ? <span className="tag" style={{ background: '#FDECEC', color: '#912018', marginLeft: 6 }}>{tr('⚠ Nahlášeno jako možná zrušené – ověř u pořadatele')}</span> : null
   const d = new Date(r.from + 'T12:00:00')
   const d2 = r.to ? new Date(r.to + 'T12:00:00') : null
   const ll = r.lat + ',' + r.lon
   const placeFull = r.place + (r.venue ? ' – ' + r.venue : '')
   const terr = terrainOf(r)
   let trackNote = r.note || ''
-  if (r.tracksYear < 2027) trackNote = (trackNote ? trackNote + ' · ' : '') + 'tratě podle ročníku ' + r.tracksYear
+  if (r.tracksYear < 2027) trackNote = (trackNote ? trackNote + ' · ' : '') + tr('tratě podle ročníku ') + r.tracksYear
   const lk = r.links || {}
   const mins = Math.round(km / 65 * 60 + 10)
-  const travel = km <= 5 ? 'Start kousek od vás' : '≈ ' + (mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min' : mins + ' min') + ' autem z: ' + loc
+  const travel = km <= 5 ? tr('Start kousek od vás') : '≈ ' + (mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min' : mins + ' min') + tr(' autem z: ') + loc
   const ymd = r.from.replace(/-/g, '')
   const e = new Date((r.to || r.from) + 'T12:00:00'); e.setDate(e.getDate() + 1)
   const p2 = (x) => (x < 10 ? '0' : '') + x
@@ -725,7 +719,7 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
   const gcal = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(r.name) + '&dates=' + gdates + '&ctz=Europe/Prague&location=' + encodeURIComponent(where) + '&details=' + encodeURIComponent((r.web || '') + (lk.reg ? ' · přihláška: ' + lk.reg[1] : ''))
 
   if (mob) {
-    const main = past ? (rl ? [rl.label, rl.url] : [r.webOwn ? 'Web závodu' : 'Detail závodu', r.web]) : lk.reg ? ['Přihláška', lk.reg[1]] : [r.webOwn ? 'Web závodu' : 'Detail závodu', r.web]
+    const main = past ? (rl ? [rl.label, rl.url] : [r.webOwn ? tr('Web závodu') : tr('Detail závodu'), r.web]) : lk.reg ? [tr('Přihláška'), lk.reg[1]] : [r.webOwn ? tr('Web závodu') : tr('Detail závodu'), r.web]
     const shortDow = d2 ? DOW[d.getDay()].slice(0, 2) + '–' + DOW[d2.getDay()].slice(0, 2) : DOW[d.getDay()].slice(0, 2)
     return (
       <article className="mcard">
@@ -736,7 +730,7 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
             <small>{shortDow}</small>
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h3>{r.name}</h3>
+            <h3>{nameLink()}</h3>
             <p className="mplace">{r.place.split(' – ')[0]} · {km <= 5 ? 'kousek od tebe' : '≈ ' + km + ' km'}{r.start ? ' · ' + r.start : ''}</p>
             <div className="mtrk">
               <span className={'surf s-' + r.surface}>{SURFLAB[r.surface] || r.surface}</span>
@@ -744,37 +738,38 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
               {r.tracks.length > 4 && <span className="trk">+{r.tracks.length - 4}</span>}
             </div>
           </div>
-          <button className={saved ? 'mheart on' : 'mheart'} aria-pressed={saved} aria-label={saved ? 'Odebrat z mého kalendáře' : 'Uložit do mého kalendáře'} onClick={(e) => { e.stopPropagation(); onSave() }}>{saved ? '♥' : '♡'}</button>
+          <button className={saved ? 'mheart on' : 'mheart'} aria-pressed={saved} aria-label={saved ? tr('Odebrat z mého kalendáře') : tr('Uložit do mého kalendáře')} onClick={(e) => { e.stopPropagation(); onSave() }}>{saved ? '♥' : '♡'}</button>
         </div>
         <div className="mact">
           <a className={lk.reg || (past && rl) ? 'btn' : 'ghost'} href={main[1]} target="_blank" rel="noopener">{main[0]}</a>
-          {past ? <a className="ghost" href={r.web} target="_blank" rel="noopener">{r.webOwn ? 'Web' : 'Detail'}</a> : <a className="ghost" href={'https://mapy.cz/fnc/v1/route?mapset=traffic&end=' + r.lon + ',' + r.lat} target="_blank" rel="noopener">Navigovat</a>}
-          <button className="ghost" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'Méně' : 'Více'}</button>
+          {past ? <a className="ghost" href={r.web} target="_blank" rel="noopener">{r.webOwn ? 'Web' : 'Detail'}</a> : <a className="ghost" href={'https://mapy.cz/fnc/v1/route?mapset=traffic&end=' + r.lon + ',' + r.lat} target="_blank" rel="noopener">{tr('Navigovat')}</a>}
+          <button className="ghost" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? tr('Méně') : tr('Více')}</button>
         </div>
         {open && (
           <div className="mmore">
             {past && rl && <p style={{ margin: 0, fontSize: 13, color: '#4A4F56' }}>Výsledky najdeš na {rl.host}{r.resReady === false ? ' – pořadatel je možná ještě nenahrál, zkus to později' : ''}.</p>}
-            <p style={{ margin: 0 }}><span className={past ? 'tag' : r.status === 'oficialni' || r.plat.length > 1 ? 'tag ok' : 'tag est'}>{past ? 'Doběhnuto' : r.user ? 'Přidáno běžcem' : r.status === 'oficialni' ? '✓ Oficiální termín' : r.plat.length > 1 ? '✓ Ve ' + r.plat.length + ' termínovkách' : 'Z agregátoru – ověř u pořadatele'}</span>{r.series ? <span className="tag" style={{ marginLeft: 6 }}>{r.series}</span> : null}</p>
+            <p style={{ margin: 0 }}><span className={past ? 'tag' : r.status === 'oficialni' || r.plat.length > 1 ? 'tag ok' : 'tag est'}>{past ? tr('Doběhnuto') : r.user ? tr('Přidáno běžcem') : r.status === 'oficialni' ? tr('✓ Oficiální termín') : r.plat.length > 1 ? tr('✓ Ve ') + r.plat.length + tr(' termínovkách') : tr('Z agregátoru – ověř u pořadatele')}</span>{r.series ? <span className="tag" style={{ marginLeft: 6 }}>{r.series}</span> : null}{warn}</p>
             <p style={{ margin: 0 }}>{placeFull}, {regionLabel(r.region)} · {travel}</p>
-            <p style={{ margin: 0 }}>{r.start ? 'Start ' + r.start : 'Čas startu zatím nezveřejněn'}{r.kids ? ' · dětské závody' : ''}{r.fee ? ' · startovné ' + r.fee : ''}</p>
+            <p style={{ margin: 0 }}>{r.start ? tr('Start ') + r.start : tr('Čas startu zatím nezveřejněn')}{r.kids ? tr(' · dětské závody') : ''}{r.fee ? tr(' · startovné ') + r.fee : ''}</p>
             {(r.tracks.some((t) => t[1] !== null) || r.flags.length > 0) && <div className="mtrk">{r.tracks.filter((t) => t[1] !== null).map((t, i) => <span key={i} className="trk">{fmtKm(t[0])} km · ↑ {t[1]} m</span>)}{r.flags.map((f) => <span key={f} className="trk">{f}</span>)}</div>}
             {trackNote && <p style={{ margin: 0, fontSize: 12.5, color: '#5A5F66' }}>{trackNote}</p>}
             <div className="mlinks">
-              {lk.reg && <a href={r.web} target="_blank" rel="noopener">{r.webOwn ? 'Web závodu' : 'Detail závodu'}</a>}
-              {lk.prop && <a href={lk.prop[1]} target="_blank" rel="noopener">Propozice</a>}
-              {lk.start && <a href={lk.start[1]} target="_blank" rel="noopener">Startovka</a>}
-              {lk.res && !past && <a href={lk.res[1]} target="_blank" rel="noopener">Minulé ročníky</a>}
+              {lk.reg && <a href={r.web} target="_blank" rel="noopener">{r.webOwn ? tr('Web závodu') : tr('Detail závodu')}</a>}
+              {lk.prop && <a href={lk.prop[1]} target="_blank" rel="noopener">{tr('Propozice')}</a>}
+              {lk.start && <a href={lk.start[1]} target="_blank" rel="noopener">{tr('Startovka')}</a>}
+              {lk.res && !past && <a href={lk.res[1]} target="_blank" rel="noopener">{tr('Minulé ročníky')}</a>}
             </div>
-            <div className="mlinks"><span>Navigace:</span>
-              <a href={'https://mapy.cz/fnc/v1/route?mapset=traffic&end=' + r.lon + ',' + r.lat} target="_blank" rel="noopener">Mapy.cz</a>
-              <a href={'https://www.google.com/maps/dir/?api=1&destination=' + ll} target="_blank" rel="noopener">Google</a>
-              <a href={'https://waze.com/ul?ll=' + ll + '&navigate=yes'} target="_blank" rel="noopener">Waze</a>
+            <div className="mlinks"><span>{tr('Navigace:')}</span>
+              <a href={'https://mapy.cz/fnc/v1/route?mapset=traffic&end=' + r.lon + ',' + r.lat} target="_blank" rel="noopener">{tr('Mapy.cz')}</a>
+              <a href={'https://www.google.com/maps/dir/?api=1&destination=' + ll} target="_blank" rel="noopener">{tr('Google')}</a>
+              <a href={'https://waze.com/ul?ll=' + ll + '&navigate=yes'} target="_blank" rel="noopener">{tr('Waze')}</a>
             </div>
-            <div className="mlinks"><span>Do kalendáře:</span>
-              <a href={gcal} target="_blank" rel="noopener">Google</a>
+            <div className="mlinks"><span>{tr('Do kalendáře:')}</span>
+              <a href={gcal} target="_blank" rel="noopener">{tr('Google')}</a>
               <button onClick={() => downloadIcs([r], r.id + '.ics', r.name)}>Apple / Outlook</button>
             </div>
-            <p style={{ margin: 0, fontSize: 12, color: '#5A5F66' }}>Zdroj: {r.src.map((x, i) => <span key={x[1]}>{i ? ', ' : ''}<a href={x[1]} target="_blank" rel="noopener" style={{ color: '#5A5F66' }}>{x[0]}</a></span>)}</p>
+            <div className="mlinks"><button onClick={onShare}>{tr('Sdílet')}</button><button onClick={onReport}>{tr('Nahlásit chybu')}</button></div>
+            <p style={{ margin: 0, fontSize: 12, color: '#5A5F66' }}>{tr('Zdroj: ')}{r.src.map((x, i) => <span key={x[1]}>{i ? ', ' : ''}<a href={x[1]} target="_blank" rel="noopener" style={{ color: '#5A5F66' }}>{x[0]}</a></span>)}</p>
           </div>
         )}
       </article>
@@ -793,17 +788,18 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
           <span className={'surf s-' + r.surface}>{SURFLAB[r.surface] || r.surface}</span>
           {terr && <span className="tag">{TERRLAB[terr]}</span>}
           {r.series && <span className="tag">Seriál {r.series}</span>}
-          {past ? <span className="tag done">✓ Doběhnuto</span> : <span className={r.status === 'oficialni' || r.plat.length > 1 ? 'tag ok' : 'tag est'}>{r.user ? 'Přidáno běžcem – k ověření' : r.status === 'oficialni' ? '✓ Oficiální termín' : r.plat.length > 1 ? '✓ Shoduje se ve ' + r.plat.length + ' termínovkách' : 'Termín z agregátoru – k ověření'}</span>}
+          {past ? <span className="tag done">{tr('✓ Doběhnuto')}</span> : <span className={r.status === 'oficialni' || r.plat.length > 1 ? 'tag ok' : 'tag est'}>{r.user ? tr('Přidáno běžcem – k ověření') : r.status === 'oficialni' ? tr('✓ Oficiální termín') : r.plat.length > 1 ? tr('✓ Shoduje se ve ') + r.plat.length + tr(' termínovkách') : tr('Termín z agregátoru – k ověření')}</span>}
+          {warn}
         </div>
-        <h3 style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, fontWeight: 600 }}>{r.name}</h3>
+        <h3 style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, fontWeight: 600 }}>{nameLink()}</h3>
         <p style={{ margin: 0, fontSize: 14, color: '#4A4F56', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <Icon d={<><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></>} />
-          <a className="plink" href={'https://www.google.com/maps/search/?api=1&query=' + ll} target="_blank" rel="noopener">{placeFull}</a>, {regionLabel(r.region)} · {km <= 5 ? 'kousek od vás' : '≈ ' + km + ' km od vás'}
+          <a className="plink" href={'https://www.google.com/maps/search/?api=1&query=' + ll} target="_blank" rel="noopener">{placeFull}</a>, {regionLabel(r.region)} · {km <= 5 ? tr('kousek od vás') : '≈ ' + km + tr(' km od vás')}
         </p>
         <p className="times">
           <Icon d={<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>} />
-          <span>{r.start ? 'Start ' + r.start : 'Čas startu zatím nezveřejněn'}</span>
-          {r.kids && <span className="kids">Dětské závody</span>}
+          <span>{r.start ? tr('Start ') + r.start : tr('Čas startu zatím nezveřejněn')}</span>
+          {r.kids && <span className="kids">{tr('Dětské závody')}</span>}
           {r.fee && <span style={{ color: '#4A4F56' }}>· Startovné {r.fee}</span>}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
@@ -814,32 +810,32 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
         {past ? (
           <div className="acts">
             <div className="agrp">
-              <span className="alab">Výsledky</span>
-              {rl ? <a className="act hot" href={rl.url} target="_blank" rel="noopener">{rl.label}<small>{rl.host}</small></a> : <span className="none">Odkaz na výsledky zatím nemáme</span>}
-              {r.resReady === false && <span className="none">pořadatel je možná ještě nenahrál</span>}
+              <span className="alab">{tr('Výsledky')}</span>
+              {rl ? <a className="act hot" href={rl.url} target="_blank" rel="noopener">{rl.label}<small>{rl.host}</small></a> : <span className="none">{tr('Odkaz na výsledky zatím nemáme')}</span>}
+              {r.resReady === false && <span className="none">{tr('pořadatel je možná ještě nenahrál')}</span>}
             </div>
           </div>
         ) : (<>
         <div className="acts">
           <div className="agrp">
-            <span className="alab">Závod online</span>
-            {lk.reg && <a className="act hot" href={lk.reg[1]} target="_blank" rel="noopener">Přihláška<small>{lk.reg[0]}</small></a>}
-            {lk.start && <a className="act" href={lk.start[1]} target="_blank" rel="noopener">Startovka<small>{lk.start[0]}</small></a>}
-            {lk.res && <a className="act" href={lk.res[1]} target="_blank" rel="noopener">Minulé ročníky<small>výsledky</small></a>}
-            {lk.prop && <a className="act" href={lk.prop[1]} target="_blank" rel="noopener">Propozice<small>soubor</small></a>}
-            {!lk.reg && !lk.start && !lk.res && <span className="none">Přihlášky a výsledky zatím nenapojené</span>}
+            <span className="alab">{tr('Závod online')}</span>
+            {lk.reg && <a className="act hot" href={lk.reg[1]} target="_blank" rel="noopener">{tr('Přihláška')}<small>{lk.reg[0]}</small></a>}
+            {lk.start && <a className="act" href={lk.start[1]} target="_blank" rel="noopener">{tr('Startovka')}<small>{lk.start[0]}</small></a>}
+            {lk.res && <a className="act" href={lk.res[1]} target="_blank" rel="noopener">{tr('Minulé ročníky')}<small>{tr('výsledky')}</small></a>}
+            {lk.prop && <a className="act" href={lk.prop[1]} target="_blank" rel="noopener">{tr('Propozice')}<small>{tr('soubor')}</small></a>}
+            {!lk.reg && !lk.start && !lk.res && <span className="none">{tr('Přihlášky a výsledky zatím nenapojené')}</span>}
           </div>
         </div>
         <div className="acts">
           <div className="agrp">
-            <span className="alab">Navigovat</span>
-            <a className="act" href={'https://mapy.cz/fnc/v1/route?mapset=traffic&end=' + r.lon + ',' + r.lat} target="_blank" rel="noopener">Mapy.cz</a>
-            <a className="act" href={'https://www.google.com/maps/dir/?api=1&destination=' + ll} target="_blank" rel="noopener">Google</a>
-            <a className="act" href={'https://waze.com/ul?ll=' + ll + '&navigate=yes'} target="_blank" rel="noopener">Waze</a>
+            <span className="alab">{tr('Navigovat')}</span>
+            <a className="act" href={'https://mapy.cz/fnc/v1/route?mapset=traffic&end=' + r.lon + ',' + r.lat} target="_blank" rel="noopener">{tr('Mapy.cz')}</a>
+            <a className="act" href={'https://www.google.com/maps/dir/?api=1&destination=' + ll} target="_blank" rel="noopener">{tr('Google')}</a>
+            <a className="act" href={'https://waze.com/ul?ll=' + ll + '&navigate=yes'} target="_blank" rel="noopener">{tr('Waze')}</a>
           </div>
           <div className="agrp">
-            <span className="alab">Do kalendáře</span>
-            <a className="act" href={gcal} target="_blank" rel="noopener">Google</a>
+            <span className="alab">{tr('Do kalendáře')}</span>
+            <a className="act" href={gcal} target="_blank" rel="noopener">{tr('Google')}</a>
             <button className="act" onClick={() => downloadIcs([r], r.id + '.ics', r.name)}>Apple / Outlook</button>
           </div>
           <span style={{ fontSize: 13, color: '#5A5F66' }}>{travel}</span>
@@ -847,11 +843,12 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
         </>)}
       </div>
       <div className="cside" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, minWidth: 170 }}>
-        {past && rl ? <a className="btn" href={rl.url} target="_blank" rel="noopener">Výsledky</a> : <a className="btn" href={r.web} target="_blank" rel="noopener">{r.webOwn ? 'Web závodu' : 'Detail závodu'}</a>}
-        {past && rl && <a className="srcl" href={r.web} target="_blank" rel="noopener">{r.webOwn ? 'Web závodu' : 'Detail závodu'}</a>}
-        {!r.webOwn && <span className="srcl" style={{ textAlign: 'right' }}>web pořadatele zatím nemáme</span>}
-        <button className={saved ? 'ghost saved' : 'ghost'} aria-pressed={saved} onClick={onSave} style={{ minHeight: 36, fontSize: 13 }}>{saved ? '♥ V mém kalendáři' : '♡ Uložit závod'}</button>
-        <span className="srcl">Zdroj termínu:</span>
+        {past && rl ? <a className="btn" href={rl.url} target="_blank" rel="noopener">{tr('Výsledky')}</a> : <a className="btn" href={r.web} target="_blank" rel="noopener">{r.webOwn ? tr('Web závodu') : tr('Detail závodu')}</a>}
+        {past && rl && <a className="srcl" href={r.web} target="_blank" rel="noopener">{r.webOwn ? tr('Web závodu') : tr('Detail závodu')}</a>}
+        {!r.webOwn && <span className="srcl" style={{ textAlign: 'right' }}>{tr('web pořadatele zatím nemáme')}</span>}
+        <button className={saved ? 'ghost saved' : 'ghost'} aria-pressed={saved} onClick={onSave} style={{ minHeight: 36, fontSize: 13 }}>{saved ? tr('♥ V mém kalendáři') : tr('♡ Uložit závod')}</button>
+        <span style={{ display: 'flex', gap: 10 }}><button className="linkbtn" onClick={onShare} style={{ fontSize: 13 }}>{tr('Sdílet')}</button><button className="linkbtn" onClick={onReport} style={{ fontSize: 13, color: '#5A5F66' }}>{tr('Nahlásit chybu')}</button></span>
+        <span className="srcl">{tr('Zdroj termínu:')}</span>
         {r.src.map((x) => <a key={x[1]} className="srcl" href={x[1]} target="_blank" rel="noopener">{x[0]}</a>)}
       </div>
     </article>
