@@ -10,6 +10,8 @@ import {
 } from './lib/auth'
 import { downloadIcs } from './lib/ics'
 import MapView from './components/MapView'
+import AddRace, { rowToRace } from './components/AddRace'
+import { supabase } from './lib/auth'
 
 const INITIAL = {
   q: '', radius: 0, dist: [], surf: [], terrain: 'vse', regions: [], kmMin: '', kmMax: '', flags: [], series: [], plats: [], status: [],
@@ -101,6 +103,13 @@ export default function App() {
   const [mob, setMob] = useState(() => typeof window !== 'undefined' && window.matchMedia(MQ).matches)
   useEffect(() => { const m = window.matchMedia(MQ); const f = () => setMob(m.matches); m.addEventListener('change', f); return () => m.removeEventListener('change', f) }, [])
   const [sheet, setSheet] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
+  const [ver, setVer] = useState(0)
+  const addRaces = (list) => { let n = 0; list.forEach((r) => { if (!RACES.some((x) => x.id === r.id)) { RACES.push(r); n++ } }); if (n) setVer((v) => v + 1) }
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('user_races').select('*').gte('date_from', RES_FROM).limit(2000).then(({ data }) => { if (data) addRaces(data.map(rowToRace)) })
+  }, [])
   useEffect(() => { document.body.style.overflow = sheet ? 'hidden' : ''; return () => { document.body.style.overflow = '' } }, [sheet])
   const home = useMemo(() => geo ? { name: 'tvoje poloha (u ' + geo.near + ')', short: geo.near, lat: geo.lat, lon: geo.lon, found: true, geo: true } : findPlace(loc), [loc, geo])
   useEffect(() => {
@@ -216,7 +225,7 @@ export default function App() {
     else list.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : (a.start || '99') < (b.start || '99') ? -1 : 1))
     return list
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s, saved, isMuj, home])
+  }, [s, saved, isMuj, home, ver])
 
   const counted = (list, key, skip, test) => {
     const base = RACES.filter((r) => match(r, skip))
@@ -413,8 +422,9 @@ export default function App() {
           </div>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 19 }}>Startovka</span>
         </div>
+        <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><button className="hbtn" onClick={() => setAddOpen(true)} style={{ minHeight: 36, padding: '0 10px', borderColor: '#C2410C', color: '#FDBA8C' }} aria-label="Přidat závod">+ Závod</button>
         {!user ? <button className="hbtn" onClick={() => openAuth('login')} style={{ minHeight: 36 }}>Přihlásit</button>
-          : <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span className="avatar" aria-hidden="true" style={{ width: 30, height: 30, fontSize: 12 }}>{initials}</span><button className="hbtn" onClick={doLogout} style={{ minHeight: 34, fontSize: 13, padding: '0 10px' }}>Odhlásit</button></span>}
+          : <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span className="avatar" aria-hidden="true" style={{ width: 30, height: 30, fontSize: 12 }}>{initials}</span><button className="hbtn" onClick={doLogout} style={{ minHeight: 34, fontSize: 13, padding: '0 10px' }}>Odhlásit</button></span>}</span>
       </header>
       </>) : (<>
       <header style={{ background: '#15171A', color: '#FFFFFF' }}>
@@ -433,6 +443,7 @@ export default function App() {
               <button aria-pressed="true" style={segBtn(true)}>CZ</button>
               <button aria-pressed="false" style={segBtn(false)} title="Anglická verze se připravuje">EN</button>
             </span>
+            <button className="hbtn" onClick={() => setAddOpen(true)} style={{ borderColor: '#C2410C', color: '#FDBA8C' }}>+ Přidat závod</button>
             {!user ? (
               <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <button className="hbtn" onClick={() => openAuth('login')}>Přihlásit</button>
@@ -661,6 +672,8 @@ export default function App() {
         </div>
       )}
 
+      {addOpen && <AddRace onClose={() => setAddOpen(false)} onAdded={(r) => addRaces([r])} placeNames={PLACE_NAMES} cities={CITIES} user={user} />}
+
       {auth.open && (
         <div onClick={(e) => { if (e.target === e.currentTarget) closeAuth() }} style={{ position: 'fixed', inset: 0, background: 'rgba(21,23,26,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }}>
           <div role="dialog" aria-modal="true" aria-labelledby="authTitle" style={{ background: '#FFFFFF', borderRadius: 16, maxWidth: 420, width: '100%', padding: 24, display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '92vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,.25)' }}>
@@ -741,7 +754,7 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
         {open && (
           <div className="mmore">
             {past && rl && <p style={{ margin: 0, fontSize: 13, color: '#4A4F56' }}>Výsledky najdeš na {rl.host}{r.resReady === false ? ' – pořadatel je možná ještě nenahrál, zkus to později' : ''}.</p>}
-            <p style={{ margin: 0 }}><span className={past ? 'tag' : r.status === 'oficialni' || r.plat.length > 1 ? 'tag ok' : 'tag est'}>{past ? 'Doběhnuto' : r.status === 'oficialni' ? '✓ Oficiální termín' : r.plat.length > 1 ? '✓ Ve ' + r.plat.length + ' termínovkách' : 'Z agregátoru – ověř u pořadatele'}</span>{r.series ? <span className="tag" style={{ marginLeft: 6 }}>{r.series}</span> : null}</p>
+            <p style={{ margin: 0 }}><span className={past ? 'tag' : r.status === 'oficialni' || r.plat.length > 1 ? 'tag ok' : 'tag est'}>{past ? 'Doběhnuto' : r.user ? 'Přidáno běžcem' : r.status === 'oficialni' ? '✓ Oficiální termín' : r.plat.length > 1 ? '✓ Ve ' + r.plat.length + ' termínovkách' : 'Z agregátoru – ověř u pořadatele'}</span>{r.series ? <span className="tag" style={{ marginLeft: 6 }}>{r.series}</span> : null}</p>
             <p style={{ margin: 0 }}>{placeFull}, {regionLabel(r.region)} · {travel}</p>
             <p style={{ margin: 0 }}>{r.start ? 'Start ' + r.start : 'Čas startu zatím nezveřejněn'}{r.kids ? ' · dětské závody' : ''}{r.fee ? ' · startovné ' + r.fee : ''}</p>
             {(r.tracks.some((t) => t[1] !== null) || r.flags.length > 0) && <div className="mtrk">{r.tracks.filter((t) => t[1] !== null).map((t, i) => <span key={i} className="trk">{fmtKm(t[0])} km · ↑ {t[1]} m</span>)}{r.flags.map((f) => <span key={f} className="trk">{f}</span>)}</div>}
@@ -780,7 +793,7 @@ function RaceCard({ r, km, loc, saved, onSave, mob }) {
           <span className={'surf s-' + r.surface}>{SURFLAB[r.surface] || r.surface}</span>
           {terr && <span className="tag">{TERRLAB[terr]}</span>}
           {r.series && <span className="tag">Seriál {r.series}</span>}
-          {past ? <span className="tag done">✓ Doběhnuto</span> : <span className={r.status === 'oficialni' || r.plat.length > 1 ? 'tag ok' : 'tag est'}>{r.status === 'oficialni' ? '✓ Oficiální termín' : r.plat.length > 1 ? '✓ Shoduje se ve ' + r.plat.length + ' termínovkách' : 'Termín z agregátoru – k ověření'}</span>}
+          {past ? <span className="tag done">✓ Doběhnuto</span> : <span className={r.status === 'oficialni' || r.plat.length > 1 ? 'tag ok' : 'tag est'}>{r.user ? 'Přidáno běžcem – k ověření' : r.status === 'oficialni' ? '✓ Oficiální termín' : r.plat.length > 1 ? '✓ Shoduje se ve ' + r.plat.length + ' termínovkách' : 'Termín z agregátoru – k ověření'}</span>}
         </div>
         <h3 style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, fontWeight: 600 }}>{r.name}</h3>
         <p style={{ margin: 0, fontSize: 14, color: '#4A4F56', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>

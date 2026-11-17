@@ -771,7 +771,7 @@ var SURFLAB = {}; SURFS.forEach(function(x){SURFLAB[x.id]=x.label;});
 var TERR = [{id:'vse',label:'Vše'},{id:'rovina',label:'Rovina'},{id:'zvlneny',label:'Zvlněný'},{id:'horsky',label:'Horský'}];
 var FLAGS = [{id:'kids',label:'Dětské závody'},{id:'pes',label:'Se psem'},{id:'stafety',label:'Štafety'},{id:'nocni',label:'Noční'}];
 var SERIES = ['RunCzech','Běhej lesy','Ještěd SkyRace','7 Pohoří'];
-var PLATS = [{id:'cb',label:'Český běh (ČAS)'},{id:'sn',label:'stopnito.cz'},{id:'rc',label:'RunCzech'},{id:'bl',label:'Běhej lesy'},{id:'gt',label:'gotrail.run'},{id:'rl',label:'running.life'},{id:'bj',label:'behej.com'},{id:'sb',label:'SvětBěhu.cz'},{id:'bz',label:'BezvaBĚH.cz'}];
+var PLATS = [{id:'cb',label:'Český běh (ČAS)'},{id:'sn',label:'stopnito.cz'},{id:'rc',label:'RunCzech'},{id:'bl',label:'Běhej lesy'},{id:'gt',label:'gotrail.run'},{id:'rl',label:'running.life'},{id:'bj',label:'behej.com'},{id:'sb',label:'SvětBěhu.cz'},{id:'bz',label:'BezvaBĚH.cz'},{id:'user',label:'Přidáno běžci'}];
 var STATUS = [{id:'oficialni',label:'Oficiální termín'},{id:'agregator',label:'Z agregátoru'}];
 var RADII = [{id:25,label:'25 km'},{id:50,label:'50 km'},{id:100,label:'100 km'},{id:0,label:'Celá ČR'}];
 var KRAJE = ['Praha','Středočeský','Jihočeský','Plzeňský','Karlovarský','Ústecký','Liberecký','Královéhradecký','Pardubický','Vysočina','Jihomoravský','Olomoucký','Zlínský','Moravskoslezský'];

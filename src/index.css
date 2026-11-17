@@ -178,3 +178,4 @@ select:focus-visible,input:focus-visible{outline:2px solid #C2410C;outline-offse
 .wkhead span{font:500 13px Inter,sans-serif;color:#5A5F66}
 .tag.done{background:#E0EDE2;color:#24502F;border-color:#BFD8C4}
 .resinfo{background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:12px 16px;font-size:14px;color:#2B2F35;line-height:1.5}
+.fld input,.fld select{width:100%;box-sizing:border-box;min-width:0}
