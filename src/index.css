@@ -100,3 +100,10 @@ select:focus-visible,input:focus-visible{outline:2px solid #C2410C;outline-offse
 .advbtn:hover,.advbtn.on{background:#15171A;color:#FFFFFF}
 .advpanel{margin-top:18px;padding:18px;border-radius:12px;background:#F5F4EF}
 .advgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px 28px}
+.qsplit{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px}
+@media (max-width:760px){.qsplit{grid-template-columns:1fr}}
+.qhint{margin:10px 0 0;font-size:13px;color:#5A5F66}
+.tolseg{display:inline-flex;background:#ECEAE3;border-radius:10px;padding:3px;flex-wrap:wrap}
+.tolseg button{min-height:38px;padding:0 14px;border:0;border-radius:8px;background:transparent;font:600 14px Inter,sans-serif;color:#4A4F56;cursor:pointer}
+.tolseg button.on{background:#15171A;color:#FFFFFF}
+.tolseg button:focus-visible{outline:2px solid #C2410C;outline-offset:2px}

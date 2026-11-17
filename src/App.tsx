@@ -13,7 +13,7 @@ import { downloadIcs } from './lib/ics'
 const INITIAL = {
   q: '', radius: 0, dist: [], surf: [], terrain: 'vse', regions: [], kmMin: '', kmMax: '', flags: [], series: [], plats: [], status: [],
   regOnly: false, month: '', sort: 'datum', view: 'seznam', limit: PAGE,
-  types: [], who: [], dateFrom: '', dateTo: '',
+  types: [], who: [], dateFrom: '', dateTo: '', distC: '', tol: 2,
 }
 
 const MONFULL = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec']
@@ -43,6 +43,20 @@ const QWHEN = [
   { id: 'vikend', label: 'Tento víkend', range: () => weekend(0) },
   { id: 'pristi', label: 'Příští víkend', range: () => weekend(1) },
 ]
+const DCENT = [{ v: 5, l: '5 km' }, { v: 10, l: '10 km' }, { v: 15, l: '15 km' }, { v: 21.1, l: 'Půlmaraton' }, { v: 30, l: '30 km' }, { v: 42.2, l: 'Maraton' }, { v: 'ultra', l: 'Ultra 50+' }]
+const TOLS = [{ v: 0.5, l: 'přesně' }, { v: 2, l: '± 2 km' }, { v: 5, l: '± 5 km' }, { v: 10, l: '± 10 km' }]
+const r1 = (x) => Math.round(x * 10) / 10
+const CITIES = { 'Praha': [50.087, 14.421], 'Brno': [49.195, 16.608], 'Ostrava': [49.835, 18.292], 'Plzeň': [49.747, 13.378], 'Liberec': [50.767, 15.056], 'Olomouc': [49.594, 17.251], 'České Budějovice': [48.975, 14.474], 'Hradec Králové': [50.209, 15.832], 'Ústí nad Labem': [50.661, 14.032], 'Pardubice': [50.034, 15.781], 'Zlín': [49.226, 17.667], 'Jihlava': [49.396, 15.591], 'Karlovy Vary': [50.231, 12.871], 'Jablonec nad Nisou': [50.724, 15.171], 'Turnov': [50.587, 15.157], 'Mladá Boleslav': [50.411, 14.903], 'Kladno': [50.147, 14.103], 'Most': [50.503, 13.636], 'Opava': [49.938, 17.902], 'Frýdek-Místek': [49.683, 18.350], 'Teplice': [50.640, 13.825], 'Děčín': [50.773, 14.196], 'Chomutov': [50.460, 13.418], 'Karviná': [49.854, 18.543], 'Havířov': [49.780, 18.430], 'Prostějov': [49.472, 17.111], 'Přerov': [49.455, 17.451], 'Třebíč': [49.215, 15.882], 'Tábor': [49.414, 14.658], 'Kolín': [50.028, 15.200], 'Trutnov': [50.561, 15.913], 'Semily': [50.602, 15.335], 'Jičín': [50.437, 15.352], 'Česká Lípa': [50.686, 14.538], 'Znojmo': [48.856, 16.049], 'Písek': [49.309, 14.148], 'Příbram': [49.690, 14.010], 'Cheb': [50.080, 12.374], 'Náchod': [50.417, 16.163], 'Vsetín': [49.339, 17.996] }
+RACES.forEach((r) => { const k = r.place.split(/ [–-] /)[0]; if (!CITIES[k]) CITIES[k] = [r.lat, r.lon] })
+const PLACE_NAMES = Object.keys(CITIES).sort((a, b) => a.localeCompare(b, 'cs'))
+const norm = (x) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+function findPlace(q) {
+  const n = norm(q || '')
+  if (n) { const exact = PLACE_NAMES.find((p) => norm(p) === n) || PLACE_NAMES.find((p) => norm(p).startsWith(n)); if (exact) return { name: exact, lat: CITIES[exact][0], lon: CITIES[exact][1], found: true } }
+  return { name: 'Turnov', lat: HOME.lat, lon: HOME.lon, found: false }
+}
+function kmFrom(h, r) { const R0 = 6371, t = Math.PI / 180; const dLat = (r.lat - h.lat) * t, dLon = (r.lon - h.lon) * t; const a = Math.sin(dLat / 2) ** 2 + Math.cos(h.lat * t) * Math.cos(r.lat * t) * Math.sin(dLon / 2) ** 2; return Math.round(2 * R0 * Math.asin(Math.sqrt(a)) * 1.3 / 5) * 5 }
+
 const QPATHS = {
   silnice: <path d="M8 3L5 21M16 3l3 18M12 5v2M12 11v2M12 17v2" />,
   trail: <path d="M3 20l6-10 4 6 3-4 5 8z" />,
@@ -67,6 +81,14 @@ export default function App() {
   const [s, setS] = useState(INITIAL)
   const [loc, setLoc] = useState('Turnov')
   const [adv, setAdv] = useState(false)
+  const home = useMemo(() => findPlace(loc), [loc])
+  const kmOf = (r) => kmFrom(home, r)
+  const pickCenter = (v) => setS((p) => {
+    if (p.distC === v) return { ...p, distC: '', kmMin: '', kmMax: '', limit: PAGE }
+    if (v === 'ultra') return { ...p, distC: v, kmMin: '50', kmMax: '', limit: PAGE }
+    return { ...p, distC: v, kmMin: String(Math.max(0, r1(v - p.tol))), kmMax: String(r1(v + p.tol)), limit: PAGE }
+  })
+  const setTol = (t) => setS((p) => (typeof p.distC === 'number' ? { ...p, tol: t, kmMin: String(Math.max(0, r1(p.distC - t))), kmMax: String(r1(p.distC + t)), limit: PAGE } : { ...p, tol: t }))
   const set = (o) => setS((p) => ({ ...p, ...o, limit: PAGE }))
   const tog = (key, val) => setS((p) => { const a = p[key].slice(); const i = a.indexOf(val); if (i >= 0) a.splice(i, 1); else a.push(val); return { ...p, [key]: a, limit: PAGE } })
 
@@ -127,7 +149,7 @@ export default function App() {
   // ---- filtrování ----
   function match(r, skip) {
     if (s.kmMin !== '' || s.kmMax !== '') { const lo = s.kmMin === '' ? 0 : parseFloat(s.kmMin), hi = s.kmMax === '' ? 9999 : parseFloat(s.kmMax); if (!r.tracks.some((t) => t[0] >= lo && t[0] <= hi)) return false }
-    if (s.radius && r.km > s.radius) return false
+    if (s.radius && kmOf(r) > s.radius) return false
     if (s.q) { const q = s.q.toLowerCase(); if ((r.name + ' ' + r.place + ' ' + r.region).toLowerCase().indexOf(q) < 0) return false }
     if (s.dist.length && !r.tracks.some((t) => DISTS.some((d) => s.dist.includes(d.id) && t[0] >= d.lo && t[0] <= d.hi))) return false
     if (skip !== 'surf' && s.surf.length && !s.surf.includes(r.surface)) return false
@@ -150,12 +172,12 @@ export default function App() {
   const res = useMemo(() => {
     const list = isMuj ? RACES.filter((r) => saved.includes(r.id)) : RACES.filter((r) => match(r, ''))
     const minKm = (r) => (r.tracks.length ? Math.min(...r.tracks.map((t) => t[0])) : 9999)
-    if (s.sort === 'blizko' && !isMuj) list.sort((a, b) => a.km - b.km)
+    if (s.sort === 'blizko' && !isMuj) list.sort((a, b) => kmOf(a) - kmOf(b))
     else if (s.sort === 'kratke' && !isMuj) list.sort((a, b) => minKm(a) - minKm(b))
     else list.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : (a.start || '99') < (b.start || '99') ? -1 : 1))
     return list
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s, saved, isMuj])
+  }, [s, saved, isMuj, home])
 
   const counted = (list, key, skip, test) => {
     const base = RACES.filter((r) => match(r, skip))
@@ -192,14 +214,15 @@ export default function App() {
   if (s.dateFrom || s.dateTo) add((s.dateFrom ? s.dateFrom.split('-').reverse().join('. ') : '…') + ' – ' + (s.dateTo ? s.dateTo.split('-').reverse().join('. ') : '…'), () => set({ dateFrom: '', dateTo: '' }))
   if (s.month) add(MON[parseInt(s.month.slice(5, 7), 10) - 1] + ' ' + s.month.slice(0, 4), () => set({ month: '' }))
 
-  const advCount = (s.radius ? 1 : 0) + (s.kmMin !== '' || s.kmMax !== '' ? 1 : 0) + (s.terrain !== 'vse' ? 1 : 0) + s.series.length + s.regions.length + s.plats.length
+  const advCount = (s.terrain !== 'vse' ? 1 : 0) + s.series.length + s.regions.length + s.plats.length
+  const kmSummary = s.kmMin !== '' || s.kmMax !== '' ? 'Hledám tratě ' + (s.kmMax === '' ? 'od ' + fmtKm(s.kmMin) + ' km' : s.kmMin === '' ? 'do ' + fmtKm(s.kmMax) + ' km' : fmtKm(s.kmMin) + '–' + fmtKm(s.kmMax) + ' km') + '. Stačí, když se do rozmezí vejde jedna z tratí závodu.' : 'Vyber délku a rozptyl, nebo zadej vlastní rozmezí.'
   const n = res.length
   const countLabel = n + (n === 1 ? ' závod' : n >= 2 && n <= 4 ? ' závody' : ' závodů')
   const cntP = (p) => RACES.filter((r) => r.plat.includes(p)).length
   const nReg = RACES.filter(hasReg).length
   const regOnlyCount = RACES.filter((r) => match(r, 'reg')).filter(hasReg).length
   const shown = isMuj ? res : res.slice(0, s.limit)
-  const hx = ((HOME.lon - 12.09) / (18.86 - 12.09) * 100).toFixed(1), hy = ((51.06 - HOME.lat) / (51.06 - 48.55) * 100).toFixed(1)
+  const hx = ((home.lon - 12.09) / (18.86 - 12.09) * 100).toFixed(1), hy = ((51.06 - home.lat) / (51.06 - 48.55) * 100).toFixed(1)
   const initials = user ? user.name.split(/[\s._-]+/).filter(Boolean).slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join('') : ''
 
   let mujSummary = ''
@@ -268,24 +291,6 @@ export default function App() {
         {!isMuj && (
           <section aria-label="Filtry" className="qpanel">
             <div className="qrow">
-              <p className="qlab">Typ závodu:</p>
-              <div className="wrapchips">
-                {QTYPES.map((t) => { const on = s.types.includes(t.id); return <button key={t.id} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => tog('types', t.id)}><QIcon id={t.id} />{t.label}</button> })}
-              </div>
-            </div>
-            <div className="qrow">
-              <p className="qlab">Vzdálenost:</p>
-              <div className="wrapchips">
-                {DISTS.map((d) => { const on = s.dist.includes(d.id); return <button key={d.id} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => tog('dist', d.id)}>{d.label}</button> })}
-              </div>
-            </div>
-            <div className="qrow">
-              <p className="qlab">Pro koho a jak:</p>
-              <div className="wrapchips">
-                {QWHO.map((t) => { const on = s.who.includes(t.id); return <button key={t.id} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => tog('who', t.id)}><QIcon id={t.id} />{t.label}</button> })}
-              </div>
-            </div>
-            <div className="qrow">
               <p className="qlab">Kdy:</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
                 <label className="qdate"><span className="sr">Od data</span><input type="date" value={s.dateFrom} onChange={(e) => set({ dateFrom: e.target.value, month: '' })} /></label>
@@ -298,11 +303,58 @@ export default function App() {
                 {months.map((m) => <button key={m.key} className={m.on ? 'qchip on' : m.cnt ? 'qchip' : 'qchip zero'} aria-pressed={m.on} onClick={() => set({ month: m.on ? '' : m.key, dateFrom: '', dateTo: '' })} style={{ minHeight: 42 }}>{MONFULL[m.mm]}{m.mm === 0 ? ' ' + m.yy : ''}<span className="cnt">{m.cnt}</span></button>)}
               </div>
             </div>
-            <div className="qrow" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', borderBottom: 0, paddingBottom: 0 }}>
-              <div className="fld" style={{ flex: '1 1 240px' }}>
-                <label htmlFor="q" className="qlab" style={{ margin: 0 }}>Hledat:</label>
-                <input id="q" type="text" value={s.q} onChange={(e) => set({ q: e.target.value })} placeholder="název závodu nebo místo, např. Ještěd" />
+
+            <div className="qrow qsplit">
+              <div>
+                <label htmlFor="loc" className="qlab" style={{ display: 'block' }}>Kde:</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                  <input id="loc" type="text" value={loc} onChange={(e) => { setLoc(e.target.value); set({}) }} placeholder="tvoje město, např. Liberec" style={{ flex: '1 1 180px', minHeight: 48 }} list="mista" />
+                  <datalist id="mista">{PLACE_NAMES.map((p) => <option key={p} value={p} />)}</datalist>
+                  <div className="wrapchips">
+                    {RADII.map((r) => <button key={r.id} className={s.radius === r.id ? 'qchip on' : 'qchip'} aria-pressed={s.radius === r.id} onClick={() => set({ radius: r.id })} style={{ minHeight: 48 }}>{r.id ? 'do ' + r.label : r.label}</button>)}
+                  </div>
+                </div>
+                <p className="qhint">{home.found ? 'Vzdálenosti počítám od: ' + home.name : 'Místo „' + loc + '“ zatím neznám, počítám od Turnova. Zkus větší město.'}</p>
               </div>
+              <div>
+                <label htmlFor="q" className="qlab" style={{ display: 'block' }}>Hledat:</label>
+                <input id="q" type="text" value={s.q} onChange={(e) => set({ q: e.target.value })} placeholder="název závodu, např. Ještěd" style={{ width: '100%', minHeight: 48 }} />
+              </div>
+            </div>
+
+            <div className="qrow">
+              <p className="qlab">Typ závodu:</p>
+              <div className="wrapchips">
+                {QTYPES.map((t) => { const on = s.types.includes(t.id); return <button key={t.id} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => tog('types', t.id)}><QIcon id={t.id} />{t.label}</button> })}
+              </div>
+            </div>
+
+            <div className="qrow" style={{ borderBottom: 0 }}>
+              <p className="qlab">Vzdálenost:</p>
+              <div className="wrapchips">
+                {DCENT.map((d) => { const on = s.distC === d.v; return <button key={d.l} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => pickCenter(d.v)}>{d.l}</button> })}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', alignItems: 'center', marginTop: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 14, color: '#4A4F56', fontWeight: 600 }}>Rozptyl</span>
+                  <span className="tolseg">
+                    {TOLS.map((t) => <button key={t.v} className={s.tol === t.v ? 'on' : ''} aria-pressed={s.tol === t.v} onClick={() => setTol(t.v)}>{t.l}</button>)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 14, color: '#4A4F56', fontWeight: 600 }}>nebo vlastní rozmezí</span>
+                  <label htmlFor="kmmin" className="sr">Od kilometrů</label>
+                  <input id="kmmin" className="kmin" type="number" min="0" placeholder="od" value={s.kmMin} onChange={(e) => set({ kmMin: e.target.value, distC: '' })} />
+                  <span aria-hidden="true">–</span>
+                  <label htmlFor="kmmax" className="sr">Do kilometrů</label>
+                  <input id="kmmax" className="kmin" type="number" min="0" placeholder="do" value={s.kmMax} onChange={(e) => set({ kmMax: e.target.value, distC: '' })} />
+                  <span style={{ fontSize: 14, color: '#5A5F66' }}>km</span>
+                </div>
+              </div>
+              <p className="qhint">{kmSummary}</p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4 }}>
               <button className={adv ? 'advbtn on' : 'advbtn'} aria-expanded={adv} onClick={() => setAdv(!adv)}>
                 <Icon size={18} d={<><path d="M4 6h16M7 12h10M10 18h4" /></>} />
                 Kompletní filtrace{advCount ? ' (' + advCount + ')' : ''}
@@ -313,30 +365,6 @@ export default function App() {
             {adv && (
               <div className="advpanel">
                 <div className="advgrid">
-                  <div>
-                    <p className="flab">Odkud a jak daleko</p>
-                    <div className="fld" style={{ marginBottom: 10 }}>
-                      <label htmlFor="loc" className="sr">Odkud</label>
-                      <input id="loc" type="text" value={loc} onChange={(e) => setLoc(e.target.value)} />
-                    </div>
-                    <div className="wrapchips">
-                      {RADII.map((r) => <button key={r.id} className={s.radius === r.id ? 'chip on' : 'chip'} aria-pressed={s.radius === r.id} onClick={() => set({ radius: r.id })}>{r.label}</button>)}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="flab">Vlastní rozmezí km</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <label htmlFor="kmmin" className="sr">Od kilometrů</label>
-                      <input id="kmmin" className="kmin" type="number" min="0" placeholder="od" value={s.kmMin} onChange={(e) => set({ kmMin: e.target.value })} />
-                      <span aria-hidden="true">–</span>
-                      <label htmlFor="kmmax" className="sr">Do kilometrů</label>
-                      <input id="kmmax" className="kmin" type="number" min="0" placeholder="do" value={s.kmMax} onChange={(e) => set({ kmMax: e.target.value })} />
-                      <span style={{ fontSize: 14, color: '#5A5F66' }}>km</span>
-                    </div>
-                    <div className="wrapchips" style={{ marginTop: 10 }}>
-                      {KMP.map((p) => { const on = s.kmMin === p.lo && s.kmMax === p.hi; return <button key={p.label} className={on ? 'chip on' : 'chip'} aria-pressed={on} onClick={() => set(on ? { kmMin: '', kmMax: '' } : { kmMin: p.lo, kmMax: p.hi })} style={{ minHeight: 34, fontSize: 13, padding: '4px 12px' }}>{p.label}</button> })}
-                    </div>
-                  </div>
                   <div>
                     <p className="flab">Profil trati</p>
                     <div className="wrapchips">{TERR.map((t) => <button key={t.id} className={s.terrain === t.id ? 'chip on' : 'chip'} aria-pressed={s.terrain === t.id} onClick={() => set({ terrain: t.id })}>{t.label}</button>)}</div>
@@ -365,7 +393,7 @@ export default function App() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 700 }}>{countLabel}</span>
-              {!isMuj && <span style={{ fontSize: 14, color: '#5A5F66' }}>{(s.radius ? 'do ' + s.radius + ' km od: ' + loc : 'v celé ČR · vzdálenosti od: ' + loc) + ' · ' + nReg + ' s online přihláškou'}</span>}
+              {!isMuj && <span style={{ fontSize: 14, color: '#5A5F66' }}>{(s.radius ? 'do ' + s.radius + ' km od: ' + home.name : 'v celé ČR · vzdálenosti od: ' + home.name) + ' · ' + nReg + ' s online přihláškou'}</span>}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               {!isMuj && <>
@@ -415,7 +443,7 @@ export default function App() {
 
           {(s.view === 'seznam' || isMuj) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {shown.map((r) => <RaceCard key={r.id} r={r} loc={loc} saved={!!user && saved.includes(r.id)} onSave={() => toggleSave(r.id)} />)}
+              {shown.map((r) => <RaceCard key={r.id} r={r} km={kmOf(r)} loc={home.name} saved={!!user && saved.includes(r.id)} onSave={() => toggleSave(r.id)} />)}
               {!isMuj && n > s.limit && <button className="ghost" onClick={() => setS((p) => ({ ...p, limit: p.limit + PAGE }))} style={{ alignSelf: 'center', minHeight: 44, padding: '0 22px' }}>Zobrazit další ({n - s.limit})</button>}
               {!isMuj && n === 0 && (
                 <div style={{ background: '#FFFFFF', border: '1px dashed #B9B5A8', borderRadius: 14, padding: 36, textAlign: 'center' }}>
@@ -432,7 +460,7 @@ export default function App() {
               <span style={{ position: 'absolute', left: 14, top: 12, fontSize: 12, color: '#5A5F66', background: 'rgba(255,255,255,.9)', padding: '4px 8px', borderRadius: 6 }}>Náhled mapy · skutečný mapový podklad přidáme · popisky se ukážou při ≤ 12 závodech</span>
               <div style={{ position: 'absolute', inset: '40px 30px 30px 30px' }}>
                 <span style={{ position: 'absolute', left: hx + '%', top: hy + '%', width: 18, height: 18, margin: '-9px 0 0 -9px', borderRadius: '50%', background: '#15171A', border: '3px solid #FFFFFF' }} />
-                <span className="dlab" style={{ left: hx + '%', top: hy + '%', fontWeight: 600 }}>{loc} (start)</span>
+                <span className="dlab" style={{ left: hx + '%', top: hy + '%', fontWeight: 600 }}>{home.name} (start)</span>
                 {res.map((r) => {
                   const x = ((r.lon - 12.09) / (18.86 - 12.09) * 100).toFixed(1), y = ((51.06 - r.lat) / (51.06 - 48.55) * 100).toFixed(1)
                   return <span key={r.id}><span className="dot" style={{ left: x + '%', top: y + '%' }} title={r.name} />{n <= 12 && <span className="dlab" style={{ left: x + '%', top: y + '%' }}>{new Date(r.from + 'T12:00:00').getDate()}. {MON[new Date(r.from + 'T12:00:00').getMonth()]} · {r.name}</span>}</span>
@@ -491,7 +519,7 @@ export default function App() {
   )
 }
 
-function RaceCard({ r, loc, saved, onSave }) {
+function RaceCard({ r, km, loc, saved, onSave }) {
   const d = new Date(r.from + 'T12:00:00')
   const d2 = r.to ? new Date(r.to + 'T12:00:00') : null
   const ll = r.lat + ',' + r.lon
@@ -500,8 +528,8 @@ function RaceCard({ r, loc, saved, onSave }) {
   let trackNote = r.note || ''
   if (r.tracksYear < 2027) trackNote = (trackNote ? trackNote + ' · ' : '') + 'tratě podle ročníku ' + r.tracksYear
   const lk = r.links || {}
-  const mins = Math.round(r.km / 65 * 60 + 10)
-  const travel = r.km <= 5 ? 'Start kousek od vás' : '≈ ' + (mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min' : mins + ' min') + ' autem z: ' + loc
+  const mins = Math.round(km / 65 * 60 + 10)
+  const travel = km <= 5 ? 'Start kousek od vás' : '≈ ' + (mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min' : mins + ' min') + ' autem z: ' + loc
   const ymd = r.from.replace(/-/g, '')
   const e = new Date((r.to || r.from) + 'T12:00:00'); e.setDate(e.getDate() + 1)
   const p2 = (x) => (x < 10 ? '0' : '') + x
@@ -527,7 +555,7 @@ function RaceCard({ r, loc, saved, onSave }) {
         <h3 style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, fontWeight: 600 }}>{r.name}</h3>
         <p style={{ margin: 0, fontSize: 14, color: '#4A4F56', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <Icon d={<><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></>} />
-          <a className="plink" href={'https://www.google.com/maps/search/?api=1&query=' + ll} target="_blank" rel="noopener">{placeFull}</a>, {regionLabel(r.region)} · {r.km <= 5 ? 'kousek od vás' : '≈ ' + r.km + ' km od vás'}
+          <a className="plink" href={'https://www.google.com/maps/search/?api=1&query=' + ll} target="_blank" rel="noopener">{placeFull}</a>, {regionLabel(r.region)} · {km <= 5 ? 'kousek od vás' : '≈ ' + km + ' km od vás'}
         </p>
         <p className="times">
           <Icon d={<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>} />
