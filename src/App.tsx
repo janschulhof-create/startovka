@@ -13,7 +13,51 @@ import { downloadIcs } from './lib/ics'
 const INITIAL = {
   q: '', radius: 0, dist: [], surf: [], terrain: 'vse', regions: [], kmMin: '', kmMax: '', flags: [], series: [], plats: [], status: [],
   regOnly: false, month: '', sort: 'datum', view: 'seznam', limit: PAGE,
+  types: [], who: [], dateFrom: '', dateTo: '',
 }
+
+const MONFULL = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec']
+const QTYPES = [
+  { id: 'silnice', label: 'Silnice', test: (r) => r.surface === 'silnice' },
+  { id: 'trail', label: 'Trail / kros', test: (r) => r.surface === 'trail' },
+  { id: 'vrch', label: 'Běh do vrchu', test: (r) => r.surface === 'vrch' },
+  { id: 'smiseny', label: 'Smíšený terén', test: (r) => r.surface === 'smiseny' },
+  { id: 'OCR', label: 'Překážkový (OCR)', test: (r) => r.surface === 'OCR' },
+  { id: 'stafety', label: 'Štafety', test: (r) => hasFlag(r, 'stafety') },
+  { id: 'nocni', label: 'Noční běh', test: (r) => hasFlag(r, 'nocni') },
+  { id: 'ultra', label: 'Ultra', test: (r) => r.tracks.some((t) => t[0] > 42.5) },
+]
+const QWHO = [
+  { id: 'kids', label: 'Pro děti', test: (r) => r.kids },
+  { id: 'pes', label: 'Se psem', test: (r) => hasFlag(r, 'pes') },
+  { id: 'reg', label: 'Online přihláška', test: (r) => hasReg(r) },
+  { id: 'ofic', label: 'Ověřený termín', test: (r) => r.status === 'oficialni' },
+]
+const isoD = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+const addD = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x }
+function today0() { const t = new Date(); t.setHours(12, 0, 0, 0); return t }
+function weekend(offset) { const t = today0(); const day = t.getDay(); if (day === 0) { const sat = addD(t, -1 + offset * 7); return [isoD(offset ? sat : t), isoD(addD(sat, 1))] } const sat = addD(t, 6 - day + offset * 7); return [isoD(sat), isoD(addD(sat, 1))] }
+const QWHEN = [
+  { id: 'dnes', label: 'Dnes', range: () => { const t = isoD(today0()); return [t, t] } },
+  { id: 'zitra', label: 'Zítra', range: () => { const t = isoD(addD(today0(), 1)); return [t, t] } },
+  { id: 'vikend', label: 'Tento víkend', range: () => weekend(0) },
+  { id: 'pristi', label: 'Příští víkend', range: () => weekend(1) },
+]
+const QPATHS = {
+  silnice: <path d="M8 3L5 21M16 3l3 18M12 5v2M12 11v2M12 17v2" />,
+  trail: <path d="M3 20l6-10 4 6 3-4 5 8z" />,
+  vrch: <><path d="M3 17l6-6 4 4 8-8" /><path d="M15 7h6v6" /></>,
+  smiseny: <><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" /></>,
+  OCR: <><path d="M4 20V8h16v12M4 12h16M4 16h16M9 8v4M15 12v4M9 16v4" /></>,
+  stafety: <><circle cx="9" cy="7" r="3" /><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.5a3 3 0 0 1 0 6M21 21v-2a4 4 0 0 0-3-3.9" /></>,
+  nocni: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
+  ultra: <path d="M12 12c-2-3-4-4.5-6-4.5a4.5 4.5 0 0 0 0 9c2 0 4-1.5 6-4.5zm0 0c2 3 4 4.5 6 4.5a4.5 4.5 0 0 0 0-9c-2 0-4 1.5-6 4.5z" />,
+  kids: <><circle cx="12" cy="12" r="9" /><path d="M8.5 14.5s1.3 1.8 3.5 1.8 3.5-1.8 3.5-1.8M9 9.5h.01M15 9.5h.01" /></>,
+  pes: <><circle cx="6" cy="10" r="1.8" /><circle cx="10" cy="5.5" r="1.8" /><circle cx="14.5" cy="5.5" r="1.8" /><circle cx="18" cy="10" r="1.8" /><path d="M12 11c-3 0-6 4.5-6 7 0 1.6 1.4 2.5 3 2.5 1.3 0 2-.6 3-.6s1.7.6 3 .6c1.6 0 3-.9 3-2.5 0-2.5-3-7-6-7z" /></>,
+  reg: <><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>,
+  ofic: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></>,
+}
+function QIcon({ id }) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{QPATHS[id]}</svg> }
 
 function Icon({ d, size = 15, w = 2 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
@@ -22,6 +66,7 @@ function Icon({ d, size = 15, w = 2 }) {
 export default function App() {
   const [s, setS] = useState(INITIAL)
   const [loc, setLoc] = useState('Turnov')
+  const [adv, setAdv] = useState(false)
   const set = (o) => setS((p) => ({ ...p, ...o, limit: PAGE }))
   const tog = (key, val) => setS((p) => { const a = p[key].slice(); const i = a.indexOf(val); if (i >= 0) a.splice(i, 1); else a.push(val); return { ...p, [key]: a, limit: PAGE } })
 
@@ -94,6 +139,10 @@ export default function App() {
     if (skip !== 'status' && s.status.length && !s.status.includes(r.status)) return false
     if (skip !== 'reg' && s.regOnly && !hasReg(r)) return false
     if (skip !== 'month' && s.month && r.from.slice(0, 7) !== s.month) return false
+    if (s.types.length && !QTYPES.some((t) => s.types.includes(t.id) && t.test(r))) return false
+    if (s.who.length && !QWHO.every((t) => !s.who.includes(t.id) || t.test(r))) return false
+    if (skip !== 'month' && s.dateFrom && (r.to || r.from) < s.dateFrom) return false
+    if (skip !== 'month' && s.dateTo && r.from > s.dateTo) return false
     return true
   }
   const isMuj = s.view === 'muj' && !!user
@@ -138,8 +187,12 @@ export default function App() {
   s.series.forEach((v) => add(v, () => tog('series', v)))
   s.plats.forEach((v) => add(PLATS.find((x) => x.id === v).label, () => tog('plats', v)))
   s.status.forEach((v) => add(STATUS.find((x) => x.id === v).label, () => tog('status', v)))
+  s.types.forEach((v) => add(QTYPES.find((x) => x.id === v).label, () => tog('types', v)))
+  s.who.forEach((v) => add(QWHO.find((x) => x.id === v).label, () => tog('who', v)))
+  if (s.dateFrom || s.dateTo) add((s.dateFrom ? s.dateFrom.split('-').reverse().join('. ') : '…') + ' – ' + (s.dateTo ? s.dateTo.split('-').reverse().join('. ') : '…'), () => set({ dateFrom: '', dateTo: '' }))
   if (s.month) add(MON[parseInt(s.month.slice(5, 7), 10) - 1] + ' ' + s.month.slice(0, 4), () => set({ month: '' }))
 
+  const advCount = (s.radius ? 1 : 0) + (s.kmMin !== '' || s.kmMax !== '' ? 1 : 0) + (s.terrain !== 'vse' ? 1 : 0) + s.series.length + s.regions.length + s.plats.length
   const n = res.length
   const countLabel = n + (n === 1 ? ' závod' : n >= 2 && n <= 4 ? ' závody' : ' závodů')
   const cntP = (p) => RACES.filter((r) => r.plat.includes(p)).length
@@ -204,101 +257,110 @@ export default function App() {
         </div>
       </header>
 
-      <section style={{ background: '#15171A', color: '#FFFFFF', padding: '8px 0 34px' }}>
+      <section style={{ background: '#15171A', color: '#FFFFFF', padding: '8px 0 30px' }}>
         <div style={{ maxWidth: 1360, margin: '0 auto', padding: '0 24px' }}>
           <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4.4vw, 50px)', lineHeight: 1.05, margin: '10px 0 8px', letterSpacing: '-0.02em' }}>Najdi svůj další start.</h1>
-          <p style={{ margin: '0 0 22px', color: '#C9CCD1', fontSize: 16, maxWidth: '70ch' }}>{RACES.length} závodů sezóny 2026/27 z termínovky ČAS, registrací stopnito.cz, seriálů RunCzech a Běhej lesy a trailů v Libereckém kraji. U každého vidíš, kde se přihlásit a kde budou výsledky.</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', background: '#FFFFFF', color: '#15171A', borderRadius: 14, padding: 14 }}>
-            <div className="fld" style={{ flex: '1 1 220px' }}>
-              <label htmlFor="loc" className="flab" style={{ margin: 0 }}>Odkud</label>
-              <input id="loc" type="text" value={loc} onChange={(e) => setLoc(e.target.value)} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: '3 1 360px' }}>
-              <span className="flab" style={{ margin: 0 }}>Do vzdálenosti</span>
-              <div className="wrapchips">
-                {RADII.map((r) => <button key={r.id} className={s.radius === r.id ? 'chip on' : 'chip'} aria-pressed={s.radius === r.id} onClick={() => set({ radius: r.id })}>{r.label}</button>)}
-              </div>
-            </div>
-            <div className="fld" style={{ flex: '1 1 200px' }}>
-              <label htmlFor="q" className="flab" style={{ margin: 0 }}>Název nebo místo</label>
-              <input id="q" type="text" value={s.q} onChange={(e) => set({ q: e.target.value })} placeholder="např. Silvestrovský, Úpice" />
-            </div>
-          </div>
+          <p style={{ margin: 0, color: '#C9CCD1', fontSize: 16, maxWidth: '70ch' }}>{RACES.length} závodů sezóny 2026/27 z termínovky ČAS, registrací stopnito.cz, seriálů RunCzech a Běhej lesy a trailů v Libereckém kraji.</p>
         </div>
       </section>
 
-      <div style={{ maxWidth: 1360, margin: '0 auto', padding: '26px 24px 64px', display: 'flex', flexWrap: 'wrap', gap: 28, alignItems: 'flex-start' }}>
-        <aside aria-label="Filtry" style={{ flex: '1 1 280px', maxWidth: '100%', minWidth: 0, background: '#FFFFFF', border: '1px solid #E2E0D8', borderRadius: 14, padding: '6px 20px 14px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 12px' }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20 }}>Filtry</span>
-            <button className="ghost" onClick={reset} style={{ minHeight: 34, fontSize: 13 }}>Zrušit vše</button>
-          </div>
-          <div className="fgroup">
-            <p className="flab">Přihlášky</p>
-            <div className="wrapchips"><button className={s.regOnly ? 'chip on' : 'chip'} aria-pressed={s.regOnly} onClick={() => set({ regOnly: !s.regOnly })}>Jen s online přihláškou<span className="cnt">{regOnlyCount}</span></button></div>
-          </div>
-          <div className="fgroup">
-            <p className="flab">Vzdálenost</p>
-            <div className="wrapchips">{simple(DISTS, 'dist', (x) => x.id, (x) => x.label).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}</button>)}</div>
-            <p style={{ margin: '14px 0 8px', fontSize: 13, fontWeight: 600, color: '#2B2F35' }}>Vlastní rozmezí</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <label htmlFor="kmmin" className="sr">Od kilometrů</label>
-              <input id="kmmin" className="kmin" type="number" min="0" placeholder="od" value={s.kmMin} onChange={(e) => set({ kmMin: e.target.value })} />
-              <span aria-hidden="true">–</span>
-              <label htmlFor="kmmax" className="sr">Do kilometrů</label>
-              <input id="kmmax" className="kmin" type="number" min="0" placeholder="do" value={s.kmMax} onChange={(e) => set({ kmMax: e.target.value })} />
-              <span style={{ fontSize: 14, color: '#5A5F66' }}>km</span>
-            </div>
-            <div className="wrapchips" style={{ marginTop: 10 }}>
-              {KMP.map((p) => { const on = s.kmMin === p.lo && s.kmMax === p.hi; return <button key={p.label} className={on ? 'chip on' : 'chip'} aria-pressed={on} onClick={() => set(on ? { kmMin: '', kmMax: '' } : { kmMin: p.lo, kmMax: p.hi })} style={{ minHeight: 34, fontSize: 13, padding: '4px 12px' }}>{p.label}</button> })}
-            </div>
-          </div>
-          <div className="fgroup">
-            <p className="flab">Povrch</p>
-            <div className="wrapchips">{counted(SURFS, 'surf', 'surf', (r, id) => r.surface === id).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
-          </div>
-          <div className="fgroup">
-            <p className="flab">Profil trati</p>
-            <div className="wrapchips">{TERR.map((t) => <button key={t.id} className={s.terrain === t.id ? 'chip on' : 'chip'} aria-pressed={s.terrain === t.id} onClick={() => set({ terrain: t.id })}>{t.label}</button>)}</div>
-            <p style={{ margin: '10px 0 0', fontSize: 12.5, color: '#5A5F66', lineHeight: 1.5 }}>Rovina &lt; 15 m převýšení na km · zvlněný 15–35 · horský &gt; 35. Převýšení zatím známe jen u části závodů.</p>
-          </div>
-          <div className="fgroup">
-            <p className="flab">Kraj</p>
-            <div className="wrapchips">{counted(KRAJE, 'regions', 'region', (r, id) => r.region === id).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
-          </div>
-          <div className="fgroup">
-            <p className="flab">Speciální</p>
-            <div className="wrapchips">{simple(FLAGS, 'flags', (x) => x.id, (x) => x.label).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}</button>)}</div>
-          </div>
-          <div className="fgroup">
-            <p className="flab">Seriál</p>
-            <div className="wrapchips">{counted(SERIES, 'series', 'series', (r, id) => r.series === id).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
-          </div>
-          <div className="fgroup">
-            <p className="flab">Zdroj dat</p>
-            <div className="wrapchips">{counted(PLATS, 'plats', 'plat', (r, id) => r.plat.includes(id)).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
-            <div className="wrapchips" style={{ marginTop: 10 }}>{counted(STATUS, 'status', 'status', (r, id) => r.status === id).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick} style={{ minHeight: 34, fontSize: 13, padding: '4px 12px' }}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
-          </div>
-        </aside>
-
-        <main style={{ flex: '999 1 560px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {!isMuj && (
-            <section aria-label="Závody podle měsíců" style={{ background: '#FFFFFF', border: '1px solid #E2E0D8', borderRadius: 14, padding: '16px 18px 12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
-                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 17 }}>Sezóna 2026/27</span>
-                <span style={{ fontSize: 13, color: '#5A5F66' }}>{s.month ? 'Zobrazen jen ' + MON[parseInt(s.month.slice(5, 7), 10) - 1] + ' ' + s.month.slice(0, 4) + ' · klikni znovu pro zrušení' : 'Klikni na měsíc pro filtrování'}</span>
+      <div style={{ maxWidth: 1360, margin: '0 auto', padding: '26px 24px 64px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {!isMuj && (
+          <section aria-label="Filtry" className="qpanel">
+            <div className="qrow">
+              <p className="qlab">Typ závodu:</p>
+              <div className="wrapchips">
+                {QTYPES.map((t) => { const on = s.types.includes(t.id); return <button key={t.id} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => tog('types', t.id)}><QIcon id={t.id} />{t.label}</button> })}
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <div style={{ display: 'flex', gap: 4, minWidth: 520, alignItems: 'flex-end' }}>
-                  {months.map((m) => (
-                    <button key={m.key} className={m.on ? 'mbar on' : 'mbar'} aria-pressed={m.on} aria-label={MON[m.mm] + ' ' + m.yy + ': ' + m.cnt + ' závodů'} onClick={() => set({ month: m.on ? '' : m.key })}>
-                      <b>{m.cnt}</b><i style={{ height: m.h }} /><span>{MON[m.mm]}</span>
-                    </button>
-                  ))}
+            </div>
+            <div className="qrow">
+              <p className="qlab">Vzdálenost:</p>
+              <div className="wrapchips">
+                {DISTS.map((d) => { const on = s.dist.includes(d.id); return <button key={d.id} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => tog('dist', d.id)}>{d.label}</button> })}
+              </div>
+            </div>
+            <div className="qrow">
+              <p className="qlab">Pro koho a jak:</p>
+              <div className="wrapchips">
+                {QWHO.map((t) => { const on = s.who.includes(t.id); return <button key={t.id} className={on ? 'qchip on' : 'qchip'} aria-pressed={on} onClick={() => tog('who', t.id)}><QIcon id={t.id} />{t.label}</button> })}
+              </div>
+            </div>
+            <div className="qrow">
+              <p className="qlab">Kdy:</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+                <label className="qdate"><span className="sr">Od data</span><input type="date" value={s.dateFrom} onChange={(e) => set({ dateFrom: e.target.value, month: '' })} /></label>
+                <label className="qdate"><span className="sr">Do data</span><input type="date" value={s.dateTo} onChange={(e) => set({ dateTo: e.target.value, month: '' })} /></label>
+                <span style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginLeft: 6 }}>
+                  {QWHEN.map((w) => { const r = w.range(); const on = s.dateFrom === r[0] && s.dateTo === r[1]; return <button key={w.id} className={on ? 'qlink on' : 'qlink'} aria-pressed={on} onClick={() => set(on ? { dateFrom: '', dateTo: '' } : { dateFrom: r[0], dateTo: r[1], month: '' })}>{w.label}</button> })}
+                </span>
+              </div>
+              <div className="wrapchips" style={{ marginTop: 12 }}>
+                {months.map((m) => <button key={m.key} className={m.on ? 'qchip on' : m.cnt ? 'qchip' : 'qchip zero'} aria-pressed={m.on} onClick={() => set({ month: m.on ? '' : m.key, dateFrom: '', dateTo: '' })} style={{ minHeight: 42 }}>{MONFULL[m.mm]}{m.mm === 0 ? ' ' + m.yy : ''}<span className="cnt">{m.cnt}</span></button>)}
+              </div>
+            </div>
+            <div className="qrow" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', borderBottom: 0, paddingBottom: 0 }}>
+              <div className="fld" style={{ flex: '1 1 240px' }}>
+                <label htmlFor="q" className="qlab" style={{ margin: 0 }}>Hledat:</label>
+                <input id="q" type="text" value={s.q} onChange={(e) => set({ q: e.target.value })} placeholder="název závodu nebo místo, např. Ještěd" />
+              </div>
+              <button className={adv ? 'advbtn on' : 'advbtn'} aria-expanded={adv} onClick={() => setAdv(!adv)}>
+                <Icon size={18} d={<><path d="M4 6h16M7 12h10M10 18h4" /></>} />
+                Kompletní filtrace{advCount ? ' (' + advCount + ')' : ''}
+                <span aria-hidden="true" style={{ transform: adv ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▾</span>
+              </button>
+            </div>
+
+            {adv && (
+              <div className="advpanel">
+                <div className="advgrid">
+                  <div>
+                    <p className="flab">Odkud a jak daleko</p>
+                    <div className="fld" style={{ marginBottom: 10 }}>
+                      <label htmlFor="loc" className="sr">Odkud</label>
+                      <input id="loc" type="text" value={loc} onChange={(e) => setLoc(e.target.value)} />
+                    </div>
+                    <div className="wrapchips">
+                      {RADII.map((r) => <button key={r.id} className={s.radius === r.id ? 'chip on' : 'chip'} aria-pressed={s.radius === r.id} onClick={() => set({ radius: r.id })}>{r.label}</button>)}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="flab">Vlastní rozmezí km</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <label htmlFor="kmmin" className="sr">Od kilometrů</label>
+                      <input id="kmmin" className="kmin" type="number" min="0" placeholder="od" value={s.kmMin} onChange={(e) => set({ kmMin: e.target.value })} />
+                      <span aria-hidden="true">–</span>
+                      <label htmlFor="kmmax" className="sr">Do kilometrů</label>
+                      <input id="kmmax" className="kmin" type="number" min="0" placeholder="do" value={s.kmMax} onChange={(e) => set({ kmMax: e.target.value })} />
+                      <span style={{ fontSize: 14, color: '#5A5F66' }}>km</span>
+                    </div>
+                    <div className="wrapchips" style={{ marginTop: 10 }}>
+                      {KMP.map((p) => { const on = s.kmMin === p.lo && s.kmMax === p.hi; return <button key={p.label} className={on ? 'chip on' : 'chip'} aria-pressed={on} onClick={() => set(on ? { kmMin: '', kmMax: '' } : { kmMin: p.lo, kmMax: p.hi })} style={{ minHeight: 34, fontSize: 13, padding: '4px 12px' }}>{p.label}</button> })}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="flab">Profil trati</p>
+                    <div className="wrapchips">{TERR.map((t) => <button key={t.id} className={s.terrain === t.id ? 'chip on' : 'chip'} aria-pressed={s.terrain === t.id} onClick={() => set({ terrain: t.id })}>{t.label}</button>)}</div>
+                    <p style={{ margin: '8px 0 0', fontSize: 12.5, color: '#5A5F66', lineHeight: 1.5 }}>Podle převýšení na km. Zatím známe jen u části závodů.</p>
+                  </div>
+                  <div>
+                    <p className="flab">Seriál</p>
+                    <div className="wrapchips">{counted(SERIES, 'series', 'series', (r, id) => r.series === id).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <p className="flab">Kraj</p>
+                    <div className="wrapchips">{counted(KRAJE, 'regions', 'region', (r, id) => r.region === id).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <p className="flab">Zdroj dat</p>
+                    <div className="wrapchips">{counted(PLATS, 'plats', 'plat', (r, id) => r.plat.includes(id)).map((c) => <button key={c.id} className={c.cls} aria-pressed={c.on} onClick={c.pick}>{c.label}<span className="cnt">{c.count}</span></button>)}</div>
+                  </div>
                 </div>
               </div>
-            </section>
-          )}
+            )}
+          </section>
+        )}
+
+        <main style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>

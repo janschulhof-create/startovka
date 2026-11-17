@@ -81,3 +81,22 @@ select:focus-visible,input:focus-visible{outline:2px solid #C2410C;outline-offse
 @media (max-width:720px){.card{grid-template-columns:64px minmax(0,1fr)}.cside{grid-column:1 / -1;align-items:flex-start !important}}
 
 @media (max-width:560px){.uemail{display:none}}
+.qpanel{background:#FFFFFF;border:1px solid #E2E0D8;border-radius:16px;padding:6px 22px 20px}
+.qrow{padding:16px 0;border-bottom:1px solid #EEECE5}
+.qlab{font:500 16px Inter,sans-serif;color:#4A4F56;margin:0 0 12px}
+.qchip{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 16px 0 12px;border:1px solid #D9D6CC;border-radius:10px;background:#FFFFFF;color:#15171A;font:500 15px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.qchip svg{color:#C2410C;flex:none}
+.qchip:hover{border-color:#5A5F66}
+.qchip.on{background:#15171A;border-color:#15171A;color:#FFFFFF}
+.qchip.on svg{color:#FDBA8C}
+.qchip .cnt{font-weight:400;opacity:.6;margin-left:2px;font-size:13px}
+.qchip.zero{color:#8A8F96}
+.qchip:focus-visible,.qlink:focus-visible,.advbtn:focus-visible{outline:2px solid #C2410C;outline-offset:2px}
+.qlink{border:0;background:none;padding:8px 6px;font:600 16px Inter,sans-serif;color:#C2410C;cursor:pointer;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:7px}
+.qlink:hover{color:#9A3412}
+.qlink.on{color:#FFFFFF;background:#15171A;border-radius:8px;text-decoration:none;padding:8px 12px}
+.qdate input{font:500 15px Inter,sans-serif;color:#15171A;background:#FFFFFF;border:1px solid #D9D6CC;border-radius:10px;min-height:48px;padding:0 12px;min-width:170px}
+.advbtn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 18px;border-radius:10px;border:1.5px solid #15171A;background:#FFFFFF;color:#15171A;font:600 15px Inter,sans-serif;cursor:pointer}
+.advbtn:hover,.advbtn.on{background:#15171A;color:#FFFFFF}
+.advpanel{margin-top:18px;padding:18px;border-radius:12px;background:#F5F4EF}
+.advgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px 28px}
