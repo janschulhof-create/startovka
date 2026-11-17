@@ -34,16 +34,24 @@ function nearestRegion(lat, lon) {
   return best
 }
 
-const toks = (s) => new Set(norm(s).split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['beh', 'behu', 'zavod', 'run', 'race', 'trail', '2026', '2027'].includes(w)))
-export function findDup(d) {
+const GENERIC = new Set(['beh', 'behu', 'bezecky', 'zavod', 'run', 'race', 'trail', 'cross', 'kros', 'mikulassky', 'vanocni', 'silvestrovsky', 'stepansky', 'novorocni', 'adventni', 'velikonocni', 'jarni', 'letni', 'podzimni', 'zimni', 'nocni', 'pulmaraton', 'maraton', 'desitka', 'petka', 'memorial', 'cena', 'velka', 'mala', 'pohar', 'night', 'winter', 'christmas', 'olympijsky', 'lesni', 'okolo', 'kolem', 'rocnik', '2026', '2027'])
+const toks = (s, place) => { const pl = new Set(norm(place).split(/[^a-z0-9]+/)); return new Set(norm(s).split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !GENERIC.has(w) && !pl.has(w) && !/^\d+$/.test(w))) }
+const km = (a, b) => { const R = 6371, t = Math.PI / 180; const x = Math.sin((b[0] - a[0]) * t / 2) ** 2 + Math.cos(a[0] * t) * Math.cos(b[0] * t) * Math.sin((b[1] - a[1]) * t / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)) }
+/** Stejný závod = do 1 dne od sebe, do 20 km od sebe a shodné výrazné slovo v názvu (nebo stejný web). */
+export function findDup(d, pos) {
   if (!d.from) return null
-  const a = toks(d.name)
+  const a = toks(d.name, d.place)
+  const host = (u) => { try { const x = new URL(u); return x.hostname.replace(/^www\./, '') + x.pathname.replace(/\/$/, '') } catch { return '' } }
+  const hw = host(d.web || '')
   return RACES.find((r) => {
     const dd = Math.abs((new Date(r.from) - new Date(d.from)) / 864e5)
     if (dd > 1) return false
-    const b = toks(r.name); const c = [...a].filter((x) => b.has(x)).length
-    if (c && c / Math.max(1, Math.min(a.size, b.size)) >= 0.5) return true
-    return dd === 0 && d.place && norm(r.place).startsWith(norm(d.place)) && c > 0
+    if (hw && hw.includes('/') && host(r.web || '') === hw) return true
+    if (pos && km(pos, [r.lat, r.lon]) > 20) return false
+    if (!pos && d.place && !norm(r.place).includes(norm(d.place)) && !norm(d.place).includes(norm(r.place.split(/ [–-] /)[0]))) return false
+    const b = toks(r.name, r.place); const c = [...a].filter((x) => b.has(x)).length
+    if (!a.size || !b.size) return dd === 0 // obecný název na stejném místě a ve stejný den
+    return c / Math.min(a.size, b.size) >= 0.5
   }) || null
 }
 
@@ -65,7 +73,7 @@ export default function AddRace({ onClose, onAdded, placeNames, cities, user }) 
 
   async function fromSource(src, k) {
     const r = parseRace(src, placeNames, TODAY)
-    setKind(k); setD({ ...r, distText: r.distances.join(', ').replace(/\./g, ',') }); setDup(findDup(r)); setStep('form')
+    setKind(k); setD({ ...r, distText: r.distances.join(', ').replace(/\./g, ',') }); setDup(findDup(r, r.place && cities[r.place])); setStep('form')
   }
   async function loadUrl() {
     setErr(''); const u = url.trim()
@@ -88,7 +96,7 @@ export default function AddRace({ onClose, onAdded, placeNames, cities, user }) 
     try { const t = await pdfText(new Uint8Array(await f.arrayBuffer())); if (t.replace(/\s/g, '').length < 40) setErr('PDF neobsahuje text (asi je to sken) – údaje doplň ručně.'); await fromSource({ text: t, url: '' }, 'pdf') } catch { setErr('PDF se nepodařilo přečíst.') }
     setBusy(false)
   }
-  async function save() {
+  async function save(force) {
     setErr('')
     const name = (d.name || '').trim(); const place = (d.place || '').trim()
     const c = d.geo ? [d.geo.lat, d.geo.lon] : cities[place]
@@ -96,8 +104,8 @@ export default function AddRace({ onClose, onAdded, placeNames, cities, user }) 
     if (!d.from || d.from < TODAY) return setErr('Doplň datum závodu (v budoucnu).')
     if (!c) return setErr('Vyber místo z nabídky (začni psát název obce a klepni na ni).')
     const distances = (d.distText || '').split(/[;,/ ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x <= 400).slice(0, 12)
-    const dp = findDup({ ...d, name, place })
-    if (dp) { setDup(dp); return setErr('Tenhle závod už v kalendáři máme – díky!') }
+    const dp = force ? null : findDup({ ...d, name, place }, c)
+    if (dp) { setDup(dp); return setErr('Tenhle závod už v kalendáři máme – díky! Pokud jde o jiný závod, klikni na „Je to jiný závod“.') }
     if (!supabase) return setErr('Přidávání závodů funguje jen na ostrém webu.')
     setBusy(true)
     const row = { name, date_from: d.from, date_to: d.to || null, place, region: (d.geo && d.geo.region) || nearestRegion(c[0], c[1]), lat: c[0], lon: c[1], distances, surface: d.surface || 'neuvedeno', start_time: d.start || null, web: /^https?:\/\//.test(d.web || '') ? d.web : null, reg: /^https?:\/\//.test(d.reg || '') ? d.reg : null, source_url: kind === 'url' ? url.trim() : null, source_kind: kind, submitter: user && user.method !== 'demo' ? user.id : null }
@@ -147,7 +155,8 @@ export default function AddRace({ onClose, onAdded, placeNames, cities, user }) 
           <F label="Povrch"><select value={d.surface} onChange={(e) => set({ surface: e.target.value })}>{SURFS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select></F>
           <F label="Web závodu" hint="nepovinné"><input type="text" value={d.web} onChange={(e) => set({ web: e.target.value })} placeholder="https://" /></F>
           <F label="Odkaz na přihlášky" hint={ok('reg') ? 'načteno' : 'nepovinné'}><input type="text" value={d.reg} onChange={(e) => set({ reg: e.target.value })} placeholder="https://" /></F>
-          <button className="btn" disabled={busy} onClick={save} style={{ minHeight: 46 }}>{busy ? 'Ukládám…' : 'Přidat do kalendáře'}</button>
+          <button className="btn" disabled={busy} onClick={() => save(false)} style={{ minHeight: 46 }}>{busy ? 'Ukládám…' : 'Přidat do kalendáře'}</button>
+          {dup && <button className="ghost" disabled={busy} onClick={() => save(true)} style={{ minHeight: 42 }}>Je to jiný závod – přidat</button>}
           <button className="linkbtn" style={{ alignSelf: 'center', fontWeight: 500, fontSize: 13 }} onClick={() => { setStep('input'); setErr(''); setDup(null) }}>Zpět</button>
         </>}
 
