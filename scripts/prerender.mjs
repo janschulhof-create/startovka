@@ -4,7 +4,7 @@ import { build } from 'esbuild'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const SITE = (process.env.SITE_URL || 'https://startovka.vercel.app').replace(/\/$/, '')
+const SITE = (process.env.SITE_URL || 'https://rundar-run.vercel.app').replace(/\/$/, '')
 const DIST = 'dist'
 const tmp = path.join('node_modules', '.cache', 'races.prerender.mjs')
 fs.mkdirSync(path.dirname(tmp), { recursive: true })
@@ -41,8 +41,8 @@ let n = 0
 for (const r of RACES) {
   const p = '/zavod/' + r.id + '/'
   const when = fmt(r.from) + (r.to ? ' – ' + fmt(r.to) : '')
-  const title = r.name + ' – ' + when + ', ' + r.place + ' | Startovka'
-  const desc = 'Běžecký závod ' + r.name + ' ' + when + ' (' + r.place + ', ' + regionLabel(r.region) + ')' + (r.tracks.length ? '. Tratě: ' + km(r) : '') + '. Přihláška, navigace a výsledky na Startovce.'
+  const title = r.name + ' – ' + when + ', ' + r.place + ' | Rundar'
+  const desc = 'Běžecký závod ' + r.name + ' ' + when + ' (' + r.place + ', ' + regionLabel(r.region) + ')' + (r.tracks.length ? '. Tratě: ' + km(r) : '') + '. Přihláška, navigace a výsledky na Rundaru.'
   const ld = {
     '@context': 'https://schema.org', '@type': 'SportsEvent', name: r.name, sport: 'Running',
     startDate: r.from + (r.start ? 'T' + r.start : ''), endDate: r.to || r.from,
@@ -50,15 +50,15 @@ for (const r of RACES) {
     location: { '@type': 'Place', name: r.place, address: { '@type': 'PostalAddress', addressLocality: r.place.split(' – ')[0], addressRegion: regionLabel(r.region), addressCountry: 'CZ' }, geo: { '@type': 'GeoCoordinates', latitude: r.lat, longitude: r.lon } },
     url: SITE + p, description: desc, ...(r.webOwn ? { sameAs: r.web } : {}),
   }
-  const body = '<main style="font-family:sans-serif;max-width:720px;margin:40px auto;padding:0 16px"><p><a href="/">Startovka</a></p><h1>' + esc(r.name) + '</h1><p>' + esc(when) + ' · ' + esc(r.place) + ', ' + esc(regionLabel(r.region)) + '</p>' + (r.tracks.length ? '<p>Tratě: ' + esc(km(r)) + ' · ' + esc(SURFLAB[r.surface] || '') + '</p>' : '') + (r.start ? '<p>Start ' + esc(r.start) + '</p>' : '') + (r.web ? '<p><a href="' + esc(r.web) + '" rel="nofollow noopener">Web závodu</a></p>' : '') + '</main>'
+  const body = '<main style="font-family:sans-serif;max-width:720px;margin:40px auto;padding:0 16px"><p><a href="/">Rundar</a></p><h1>' + esc(r.name) + '</h1><p>' + esc(when) + ' · ' + esc(r.place) + ', ' + esc(regionLabel(r.region)) + '</p>' + (r.tracks.length ? '<p>Tratě: ' + esc(km(r)) + ' · ' + esc(SURFLAB[r.surface] || '') + '</p>' : '') + (r.start ? '<p>Start ' + esc(r.start) + '</p>' : '') + (r.web ? '<p><a href="' + esc(r.web) + '" rel="nofollow noopener">Web závodu</a></p>' : '') + '</main>'
   page(p, title, desc, body, '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, '\\u003c') + '</script>')
   if ((r.to || r.from) >= today) urls.push(SITE + p)
   n++
 }
 const STATIC = [
-  ['/o-projektu/', 'O projektu a zdroje dat | Startovka', 'Odkud Startovka bere závody, jak funguje a kdo za ní stojí.'],
-  ['/ochrana-udaju/', 'Ochrana osobních údajů | Startovka', 'Jak Startovka nakládá s osobními údaji (GDPR).'],
-  ['/podminky/', 'Podmínky používání | Startovka', 'Podmínky používání webu Startovka.'],
+  ['/o-projektu/', 'O projektu a zdroje dat | Rundar', 'Odkud Rundar bere závody, jak funguje a kdo za ní stojí.'],
+  ['/ochrana-udaju/', 'Ochrana osobních údajů | Rundar', 'Jak Rundar nakládá s osobními údaji (GDPR).'],
+  ['/podminky/', 'Podmínky používání | Rundar', 'Podmínky používání webu Rundar.'],
 ]
 for (const [p, t, d] of STATIC) { page(p, t, d, ''); urls.push(SITE + p) }
 fs.writeFileSync(path.join(DIST, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls.map((u) => '  <url><loc>' + u + '</loc></url>').join('\n') + '\n</urlset>\n')

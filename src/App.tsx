@@ -135,8 +135,8 @@ export default function App() {
   const toast = (m) => { setToastMsg(m); setTimeout(() => setToastMsg(''), 2600) }
   useEffect(() => { loadReports().then((ch) => { if (ch) setVer((v) => v + 1) }) }, [ver > 0])
   useEffect(() => {
-    if (routeRace) document.title = routeRace.name + ' – ' + routeRace.place.split(' – ')[0] + ' | Startovka'
-    else if (!pageKind) document.title = tr('Startovka – běžecké závody v Česku')
+    if (routeRace) document.title = routeRace.name + ' – ' + routeRace.place.split(' – ')[0] + ' | Rundar'
+    else if (!pageKind) document.title = tr('Rundar – běžecké závody v Česku')
   }, [routeRace, pageKind])
   const nearbyOf = (r) => RACES.filter((x) => x.id !== r.id && !isPast(x) && !(x.user && x.reported >= 3)).map((x) => [x, kmFrom(r, x)]).filter((a) => a[1] <= 40).sort((a, b) => a[0].from.localeCompare(b[0].from)).slice(0, 6).map((a) => a[0])
   const cardProps = (r) => ({ onOpen: () => go(raceUrl(r)), onShare: () => shareRace(r, toast), onReport: () => setReport(r) })
@@ -449,9 +449,9 @@ export default function App() {
       <header className="mhead">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 30, height: 30, borderRadius: 8, background: '#C2410C', display: 'grid', placeItems: 'center', color: '#fff' }}>
-            <Icon size={17} w={2.2} d={<><path d="M4 21V4" /><path d="M4 4h12l-2 4 2 4H4" /></>} />
+            <Icon size={17} w={2.2} d={<><path d="M21 12a9 9 0 1 1-9-9" /><path d="M16.5 12a4.5 4.5 0 1 1-4.5-4.5" /><path d="M12 12l6.4-6.4" /><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="18.6" cy="5.4" r="1.6" fill="currentColor" stroke="none" /></>} />
           </div>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 19 }}>{tr('Startovka')}</span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 19 }}>Rundar</span>
         </div>
         <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><button className="hbtn" onClick={() => switchLang(getLang() === 'cs' ? 'en' : 'cs')} style={{ minHeight: 36, padding: '0 8px', fontSize: 12 }} aria-label="Language">{getLang() === 'cs' ? 'EN' : 'CZ'}</button><button className="hbtn" onClick={() => setAddOpen(true)} style={{ minHeight: 36, padding: '0 10px', borderColor: '#C2410C', color: '#FDBA8C' }} aria-label={tr('Přidat závod')}>+ {getLang() === 'en' ? 'Race' : 'Závod'}</button>
         {!user ? <button className="hbtn" onClick={() => openAuth('login')} style={{ minHeight: 36 }}>{tr('Přihlásit')}</button>
@@ -462,9 +462,9 @@ export default function App() {
         <div style={{ maxWidth: 1360, margin: '0 auto', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 36, height: 36, borderRadius: 9, background: '#C2410C', display: 'grid', placeItems: 'center', color: '#fff' }}>
-              <Icon size={20} w={2.2} d={<><path d="M4 21V4" /><path d="M4 4h12l-2 4 2 4H4" /></>} />
+              <Icon size={20} w={2.2} d={<><path d="M21 12a9 9 0 1 1-9-9" /><path d="M16.5 12a4.5 4.5 0 1 1-4.5-4.5" /><path d="M12 12l6.4-6.4" /><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="18.6" cy="5.4" r="1.6" fill="currentColor" stroke="none" /></>} />
             </div>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22 }}>{tr('Startovka')}</span>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22 }}>Rundar</span>
             <span style={{ fontSize: 13, color: '#B8BCC2' }}>{tr('kalendář běžeckých závodů')}</span>
           </div>
           <nav aria-label={tr('Hlavní')} style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 14, flexWrap: 'wrap' }}>
@@ -591,7 +591,7 @@ export default function App() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button className="act" disabled={!n} onClick={() => downloadIcs(res, 'muj-kalendar-zavodu.ics', tr('Moje závody – Startovka'))}>{tr('Stáhnout do kalendáře (.ics)')}</button>
+                <button className="act" disabled={!n} onClick={() => downloadIcs(res, 'muj-kalendar-zavodu.ics', tr('Moje závody – Rundar'))}>{tr('Stáhnout do kalendáře (.ics)')}</button>
                 <button className="act" onClick={() => setS((p) => ({ ...p, view: 'seznam' }))}>{tr('Zpět na všechny závody')}</button>
               </div>
               <p style={{ margin: 0, flexBasis: '100%', fontSize: 12.5, color: '#9AA0A8' }}>{tr('Soubor .ics otevřeš v Google, Apple i Outlook kalendáři. Automatický odběr se změnami termínů přidáme v další verzi.')}</p>

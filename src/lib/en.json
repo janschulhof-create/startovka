@@ -74,7 +74,6 @@
  "Maraton": "Marathon",
  "Minulé ročníky": "Past editions",
  "Moje poloha": "My location",
- "Moje závody – Startovka": "My races – Startovka",
  "Méně": "Less",
  "Místo „": "Place “",
  "Můj kalendář": "My calendar",
@@ -317,7 +316,6 @@
  "Odkaz zkopírován – vlož ho kamarádům.": "Link copied – paste it to your friends.",
  "Poznámka (nepovinné)": "Note (optional)",
  "Sdílet": "Share",
- "Startovka – běžecké závody v Česku": "Startovka – running races in the Czech Republic",
  "Tenhle závod jsme nenašli – možná byl smazán.": "We couldn't find this race – it may have been removed.",
  "Tenhle závod už jsi nahlásil(a) – díky!": "You've already reported this race – thanks!",
  "Termíny se mohou změnit – před závodem vždy ověř údaje u pořadatele.": "Dates may change – always check details with the organiser before the race.",
@@ -355,5 +353,7 @@
  "Zdroj: ": "Source: ",
  "Zobrazit": "Show",
  "Převzato z termínovky – před startem ověř u pořadatele.": "Taken from a race calendar – check with the organiser before the start.",
- " Seriál: ": " Series: "
+ " Seriál: ": " Series: ",
+ "Moje závody – Rundar": "My races – Rundar",
+ "Rundar – běžecké závody v Česku": "Rundar – running races in the Czech Republic"
 }

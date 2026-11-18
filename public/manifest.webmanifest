@@ -1,6 +1,6 @@
 {
-  "name": "Startovka – běžecké závody",
-  "short_name": "Startovka",
+  "name": "Rundar – běžecké závody",
+  "short_name": "Rundar",
   "description": "Běžecké závody v Česku na jednom místě.",
   "start_url": "/",
   "display": "standalone",

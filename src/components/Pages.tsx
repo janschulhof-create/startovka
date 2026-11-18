@@ -10,7 +10,7 @@ const H2 = { margin: '22px 0 8px', fontFamily: "'Space Grotesk', sans-serif", fo
 const P = { margin: '0 0 10px', fontSize: 15, lineHeight: 1.65, color: '#33373D', maxWidth: '75ch' }
 const BOX = { background: '#FFFFFF', border: '1px solid #E2E0D8', borderRadius: 14, padding: '22px 22px 18px' }
 
-export const SITE = 'https://startovka.vercel.app'
+export const SITE = typeof location !== 'undefined' ? location.origin : 'https://rundar-run.vercel.app'
 export const raceUrl = (r) => '/zavod/' + r.id + '/'
 
 /** Anonymní identifikátor prohlížeče – jen aby jeden člověk nemohl hlášení „nafouknout“. */
@@ -106,7 +106,7 @@ export function Footer({ go, onContact, mob }) {
   const A = (p, l) => <a href={p} onClick={(e) => { e.preventDefault(); go(p) }} style={{ color: '#4A4F56' }}>{tr(l)}</a>
   return (
     <footer style={{ borderTop: '1px solid #E2E0D8', marginTop: 8, paddingTop: 16, display: 'flex', flexWrap: 'wrap', gap: '10px 18px', fontSize: 13.5, color: '#5A5F66', paddingBottom: mob ? 8 : 0 }}>
-      <span style={{ fontWeight: 600, color: '#15171A' }}>Startovka</span>
+      <span style={{ fontWeight: 600, color: '#15171A' }}>Rundar</span>
       {A('/o-projektu/', 'O projektu a zdroje dat')}
       {A('/ochrana-udaju/', 'Ochrana osobních údajů')}
       {A('/podminky/', 'Podmínky')}
@@ -137,9 +137,9 @@ export function StaticPage({ kind, go, onContact }) {
   const cnt = (p) => RACES.filter((r) => r.plat && r.plat.includes(p)).length
   let title, body
   if (kind === 'o-projektu') {
-    title = en ? 'About Startovka' : 'O projektu'
+    title = en ? 'About Rundar' : 'O projektu'
     body = (<>
-      <p style={P}>{en ? 'Startovka is a free calendar of running races in the Czech Republic – road, trail, uphill, obstacle and kids’ races in one place, with filters by distance, place and type, a map, results and your own race calendar.' : 'Startovka je bezplatný kalendář běžeckých závodů v Česku – silnice, traily, vrchy, překážkové i dětské běhy na jednom místě. S filtry podle vzdálenosti, místa a typu, mapou, výsledky a vlastním kalendářem.'}</p>
+      <p style={P}>{en ? 'Rundar is a free calendar of running races in the Czech Republic – road, trail, uphill, obstacle and kids’ races in one place, with filters by distance, place and type, a map, results and your own race calendar.' : 'Rundar je bezplatný kalendář běžeckých závodů v Česku – silnice, traily, vrchy, překážkové i dětské běhy na jednom místě. S filtry podle vzdálenosti, místa a typu, mapou, výsledky a vlastním kalendářem.'}</p>
       <p style={P}>{en ? 'We don’t organise races or take registrations. Every race links to its organiser’s website or registration system, where you sign up and find results.' : 'Závody nepořádáme ani nevybíráme přihlášky. U každého závodu vedeme na web pořadatele nebo registrační systém, kde se přihlásíš a najdeš výsledky.'}</p>
       <h2 style={H2}>{en ? 'Where the data comes from' : 'Odkud bereme data'}</h2>
       <p style={P}>{en ? 'The calendar combines public race calendars, series and registration systems. For every race we keep where the date came from and link back to the source. Runners can add a missing race themselves (from the race website or a PDF) – those races are marked “added by a runner”.' : 'Kalendář skládá veřejné termínovky, seriály a registrační systémy. U každého závodu si pamatujeme, odkud termín máme, a odkazujeme zpět na zdroj. Chybějící závod může přidat kdokoli (z webu závodu nebo PDF propozic) – takové závody jsou označené „Přidáno běžcem“.'}</p>
@@ -161,7 +161,7 @@ export function StaticPage({ kind, go, onContact }) {
     body = (<>
       <p style={P}>{en ? 'We collect as little as possible. You can browse the calendar without an account and without cookies.' : 'Sbíráme co nejméně. Kalendář můžeš procházet bez účtu a bez cookies.'}</p>
       <h2 style={H2}>{en ? 'Controller' : 'Správce'}</h2>
-      <p style={P}>{en ? 'Startovka is run by Jan Schulhof, a private individual. Contact: the “Contact us” form at the bottom of every page.' : 'Startovku provozuje Jan Schulhof jako fyzická osoba. Kontakt: formulář „Napsat nám“ v patičce každé stránky.'}</p>
+      <p style={P}>{en ? 'Rundar is run by Jan Schulhof, a private individual. Contact: the “Contact us” form at the bottom of every page.' : 'Rundar provozuje Jan Schulhof jako fyzická osoba. Kontakt: formulář „Napsat nám“ v patičce každé stránky.'}</p>
       <h2 style={H2}>{en ? 'What we process and why' : 'Co zpracováváme a proč'}</h2>
       <ul style={{ ...P, paddingLeft: 20 }}>
         <li><b>{en ? 'Account' : 'Účet'}</b> – {en ? 'e-mail, name and the races you saved, so you can log in and keep your calendar (performance of a contract). Stored with Supabase (database and login provider).' : 'e-mail, jméno a uložené závody, abys se mohl(a) přihlásit a mít svůj kalendář (plnění smlouvy). Uloženo u Supabase (databáze a přihlašování).'}</li>
@@ -180,7 +180,7 @@ export function StaticPage({ kind, go, onContact }) {
   } else {
     title = en ? 'Terms of use' : 'Podmínky používání'
     body = (<>
-      <p style={P}>{en ? 'Startovka is free and informational. By using it you agree to these terms.' : 'Startovka je zdarma a má informativní charakter. Používáním webu s těmito podmínkami souhlasíš.'}</p>
+      <p style={P}>{en ? 'Rundar is free and informational. By using it you agree to these terms.' : 'Rundar je zdarma a má informativní charakter. Používáním webu s těmito podmínkami souhlasíš.'}</p>
       <h2 style={H2}>{en ? 'Race information' : 'Údaje o závodech'}</h2>
       <p style={P}>{en ? 'We gather races from public sources and from runners. Dates, distances and other details may change or be inaccurate – always check them with the organiser. We are not the organiser of any race and are not liable for its cancellation, changes or for damage caused by relying on the data.' : 'Závody přebíráme z veřejných zdrojů a od běžců. Termíny, tratě a další údaje se mohou změnit nebo být nepřesné – vždy je ověř u pořadatele. Nejsme pořadatelem žádného závodu a neodpovídáme za jeho zrušení, změny ani za škodu vzniklou spolehnutím na údaje.'}</p>
       <h2 style={H2}>{en ? 'Adding races and reports' : 'Přidávání závodů a hlášení'}</h2>
@@ -192,7 +192,7 @@ export function StaticPage({ kind, go, onContact }) {
       <p style={{ ...P, fontSize: 13, color: '#5A5F66' }}>{en ? 'Valid from 18 November 2026.' : 'Platné od 18. 11. 2026.'}</p>
     </>)
   }
-  if (typeof document !== 'undefined') document.title = title + ' | Startovka'
+  if (typeof document !== 'undefined') document.title = title + ' | Rundar'
   return (
     <section style={BOX}>
       <Back go={go} />

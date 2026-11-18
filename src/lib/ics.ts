@@ -8,7 +8,7 @@ function nextDay(iso) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDa
 
 function vevent(r) {
   const where = r.place + (r.venue ? ' – ' + r.venue : '') + ', ' + regionLabel(r.region)
-  const lines = ['BEGIN:VEVENT', 'UID:' + r.id + '@startovka', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z']
+  const lines = ['BEGIN:VEVENT', 'UID:' + r.id + '@rundar', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z']
   if (r.start && !r.to) {
     const [h, m] = r.start.split(':').map((x) => parseInt(x, 10))
     lines.push('DTSTART;TZID=Europe/Prague:' + ymd(r.from) + 'T' + pad(h) + pad(m) + '00')
@@ -25,8 +25,8 @@ function vevent(r) {
   return lines.join('\r\n')
 }
 
-export function buildIcs(races, calName = 'Startovka') {
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Startovka//CZ', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + esc(calName), ...races.map(vevent), 'END:VCALENDAR'].join('\r\n')
+export function buildIcs(races, calName = 'Rundar') {
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Rundar//CZ', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + esc(calName), ...races.map(vevent), 'END:VCALENDAR'].join('\r\n')
 }
 
 export function downloadIcs(races, fileName, calName) {

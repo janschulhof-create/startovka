@@ -1,4 +1,4 @@
-// Startovka – načtení stránky závodu pro automatické vyplnění (zdarma, bez AI).
+// Rundar – načtení stránky závodu pro automatické vyplnění (zdarma, bez AI).
 // Vrací text stránky, meta tagy, JSON-LD a odkazy; PDF předá dál beze změny.
 const BLOCK = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i
 const ENT = { nbsp: ' ', amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', ndash: '–', mdash: '—' }
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   if (BLOCK.test(host)) return res.status(400).json({ error: 'Tuhle adresu nejde načíst' })
   try {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 9000)
-    const r = await fetch(url, { redirect: 'follow', signal: ctrl.signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; StartovkaBot/1.0; +https://startovka.vercel.app)', 'accept-language': 'cs,en;q=0.8' } })
+    const r = await fetch(url, { redirect: 'follow', signal: ctrl.signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; RundarBot/1.0; +https://rundar-run.vercel.app)', 'accept-language': 'cs,en;q=0.8' } })
     clearTimeout(t)
     if (!r.ok) return res.status(502).json({ error: 'Stránka odpověděla chybou ' + r.status })
     const ct = r.headers.get('content-type') || ''

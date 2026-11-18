@@ -1,4 +1,4 @@
-// Startovka – jednoduchý service worker: offline záloha a rychlejší opakované načtení
+// Rundar – jednoduchý service worker: offline záloha a rychlejší opakované načtení
 const C = 'startovka-v1'
 self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(C).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon-192.png']))) })
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== C).map((k) => caches.delete(k)))).then(() => self.clients.claim())) })
